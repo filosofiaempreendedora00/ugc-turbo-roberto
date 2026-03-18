@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(npx shadcn@latest add scroll-area tabs)",
+      "Bash(xargs kill:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/node /usr/local/bin/node)",
+      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/npm /usr/local/bin/npm)",
+      "Bash(sudo mkdir:*)",
+      "Bash(sudo ln:*)",
+      "Read(//Users/roberto/**)",
+      "Bash(mkdir -p ~/bin)",
+      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/node ~/bin/node)",
+      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/npm ~/bin/npm)"
     ]
   }
 }
