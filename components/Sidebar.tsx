@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Wand2, Settings, BookMarked } from "lucide-react";
+import { Users, Wand2, Settings, BookMarked } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -10,11 +10,6 @@ const NAV_ITEMS = [
     label: "Central de Referências",
     href: "/referencias",
     icon: BookMarked,
-  },
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
   },
   {
     label: "Clientes",

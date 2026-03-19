@@ -1,4 +1,4 @@
-import { Cliente, Produto, Roteiro, GuiaMarca, GuiaProduto } from "@/types";
+import { Cliente, Produto, Roteiro, GuiaMarca, GuiaProduto, AvatarICP } from "@/types";
 
 const KEYS = {
   CLIENTES: "ugc:clientes",
@@ -56,6 +56,7 @@ export function createCliente(nome: string): Cliente {
       posicionamento: "",
       observacoes: "",
     },
+    avatares: [],
     criadoEm: now(),
     atualizadoEm: now(),
   };
@@ -83,6 +84,35 @@ export function deleteCliente(id: string): void {
   safeSet(KEYS.CLIENTES, clientes);
   const produtos = getProdutos().filter((p) => p.clienteId !== id);
   safeSet(KEYS.PRODUTOS, produtos);
+}
+
+// ─── AVATARES ICP ─────────────────────────────────────────────────────────────
+
+export function getAvataresByCliente(clienteId: string): AvatarICP[] {
+  return getClienteById(clienteId)?.avatares ?? [];
+}
+
+export function addAvatar(clienteId: string, nome: string, descricao: string): Cliente {
+  const cliente = getClienteById(clienteId);
+  if (!cliente) throw new Error("Cliente não encontrado");
+  const avatar: AvatarICP = { id: generateId(), nome, descricao };
+  return updateCliente(clienteId, { avatares: [...(cliente.avatares ?? []), avatar] });
+}
+
+export function updateAvatar(clienteId: string, avatarId: string, dados: { nome: string; descricao: string }): Cliente {
+  const cliente = getClienteById(clienteId);
+  if (!cliente) throw new Error("Cliente não encontrado");
+  const avatares = (cliente.avatares ?? []).map((a) =>
+    a.id === avatarId ? { ...a, ...dados } : a
+  );
+  return updateCliente(clienteId, { avatares });
+}
+
+export function deleteAvatar(clienteId: string, avatarId: string): Cliente {
+  const cliente = getClienteById(clienteId);
+  if (!cliente) throw new Error("Cliente não encontrado");
+  const avatares = (cliente.avatares ?? []).filter((a) => a.id !== avatarId);
+  return updateCliente(clienteId, { avatares });
 }
 
 // ─── PRODUTOS ────────────────────────────────────────────────────────────────

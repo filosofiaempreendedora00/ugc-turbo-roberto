@@ -24,6 +24,12 @@ export type FormatoRoteiro =
   | "unboxing"
   | "looks";
 
+export interface AvatarICP {
+  id: string;
+  nome: string;
+  descricao: string;
+}
+
 export interface GuiaMarca {
   nome: string;
   tomDeVoz: string;
@@ -55,6 +61,7 @@ export interface Cliente {
   id: string;
   nome: string;
   guiaMarca: GuiaMarca;
+  avatares: AvatarICP[];
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -84,6 +91,7 @@ export interface ConfiguracaoGeracao {
   icp: string;
   foco: FocoRoteiro;
   formato: FormatoRoteiro;
+  oferta: string;
   mensagemObrigatoria: string;
   quantidade: number;
 }

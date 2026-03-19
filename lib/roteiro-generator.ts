@@ -133,7 +133,7 @@ function gerarFaceToCamera(ctx: GeracaoContext): CenaRoteiro[] {
     },
     {
       cena: 4,
-      fala: `${ctx.produto.guia.oferta || "A oferta tá disponível agora e vale muito a pena."}`,
+      fala: `${ctx.config.oferta || "A oferta tá disponível agora e vale muito a pena."}`,
       briefingFilmagem: "Olhar direto para câmera. Tom mais sério e convincente. Pode bater palma levemente para dar ritmo.",
     },
     {
