@@ -19,13 +19,17 @@ import { toast } from "sonner";
 const FOCOS: FocoRoteiro[] = ["dor", "benefício"];
 const FORMATOS: FormatoRoteiro[] = ["face_to_camera", "tiktok_style", "lifestyle", "demo", "unboxing", "looks"];
 
+type OfertaTipo = "" | "frete" | "desconto" | "compre_leve" | "manual";
+
 type Estado = {
   clienteId: string;
   produtoId: string;
   icp: string;
   foco: FocoRoteiro | "";
   formato: FormatoRoteiro | "";
-  oferta: string;
+  ofertaTipo: OfertaTipo;
+  ofertaV1: string;
+  ofertaV2: string;
   mensagemObrigatoria: string;
   quantidade: number;
 };
@@ -34,11 +38,33 @@ type Acao = { type: "SET_CAMPO"; campo: keyof Estado; valor: string | number };
 
 const ESTADO_INICIAL: Estado = {
   clienteId: "", produtoId: "", icp: "", foco: "", formato: "",
-  oferta: "", mensagemObrigatoria: "", quantidade: 3,
+  ofertaTipo: "", ofertaV1: "", ofertaV2: "", mensagemObrigatoria: "", quantidade: 3,
 };
+
+function computeOferta(estado: Estado): string {
+  switch (estado.ofertaTipo) {
+    case "frete":      return `Frete grátis acima de R$${estado.ofertaV1 || "___"} hoje`;
+    case "desconto":   return `${estado.ofertaV1 || "__"}% off na primeira compra`;
+    case "compre_leve": return `Compre ${estado.ofertaV1 || "__"}, leve ${estado.ofertaV2 || "__"}`;
+    case "manual":     return estado.ofertaV1;
+    default:           return "";
+  }
+}
 
 function reducer(state: Estado, acao: Acao): Estado {
   return { ...state, [acao.campo]: acao.valor };
+}
+
+function ResumoLinha({ label, valor }: { label: string; valor?: string }) {
+  return (
+    <div className="flex justify-between items-baseline gap-2">
+      <p className="text-xs text-gray-400 shrink-0">{label}</p>
+      {valor
+        ? <p className="text-xs text-gray-800 font-medium text-right truncate max-w-[160px]">{valor}</p>
+        : <p className="text-xs text-gray-300">—</p>
+      }
+    </div>
+  );
 }
 
 function GerarPageInner() {
@@ -101,7 +127,7 @@ function GerarPageInner() {
         icp: estado.icp,
         foco: estado.foco as FocoRoteiro,
         formato: estado.formato as FormatoRoteiro,
-        oferta: estado.oferta,
+        oferta: computeOferta(estado),
         mensagemObrigatoria: estado.mensagemObrigatoria,
         quantidade: Number(estado.quantidade),
       };
@@ -171,53 +197,41 @@ function GerarPageInner() {
             {/* ICP */}
             <div className="space-y-2">
               <Label className="text-gray-700 text-xs">
-                ICP <span className="text-gray-400 font-normal">(perfil ideal do cliente)</span>
+                Avatar (Persona)
               </Label>
 
-              {estado.clienteId && avatares.length > 0 ? (
-                <div className="space-y-2">
-                  {/* Dropdown de avatares */}
-                  <div className="relative">
-                    <select
-                      value={avatarSelecionadoId}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setAvatarSelecionadoId(val);
-                        if (val === "manual") {
-                          dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
-                        } else if (val) {
-                          const avatar = avatares.find((a) => a.id === val);
-                          if (avatar) dispatch({ type: "SET_CAMPO", campo: "icp", valor: avatar.descricao || avatar.nome });
-                        } else {
-                          dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
-                        }
-                      }}
-                      className="w-full h-10 rounded-lg border border-gray-200 bg-white pl-3 pr-9 text-sm text-gray-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Selecionar avatar...</option>
-                      {avatares.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.nome}{a.descricao ? ` (${a.descricao.length > 70 ? a.descricao.slice(0, 70) + "…" : a.descricao})` : ""}
-                        </option>
-                      ))}
-                      <option value="manual">✏️ Digitar manualmente...</option>
-                    </select>
-                    <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  </div>
+              <div className="relative">
+                <select
+                  value={avatarSelecionadoId}
+                  disabled={!estado.clienteId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAvatarSelecionadoId(val);
+                    if (val === "manual") {
+                      dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
+                    } else if (val) {
+                      const avatar = avatares.find((a) => a.id === val);
+                      if (avatar) dispatch({ type: "SET_CAMPO", campo: "icp", valor: avatar.descricao || avatar.nome });
+                    } else {
+                      dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
+                    }
+                  }}
+                  className="w-full h-10 rounded-lg border border-gray-200 bg-white pl-3 pr-9 text-sm text-gray-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Selecionar avatar (persona)...</option>
+                  {avatares.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.nome}{a.descricao ? ` (${a.descricao.length > 70 ? a.descricao.slice(0, 70) + "…" : a.descricao})` : ""}
+                    </option>
+                  ))}
+                  <option value="manual">✏️ Digitar manualmente...</option>
+                </select>
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
 
-                  {/* Textarea manual */}
-                  {avatarSelecionadoId === "manual" && (
-                    <Textarea
-                      placeholder="Ex: Mulher 28-42 anos, preocupada com saúde da pele, usa Instagram..."
-                      className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm resize-none"
-                      rows={3}
-                      value={estado.icp}
-                      onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "icp", valor: e.target.value })}
-                    />
-                  )}
-                </div>
-              ) : (
+              {avatarSelecionadoId === "manual" && (
                 <Textarea
+                  autoFocus
                   placeholder="Ex: Mulher 28-42 anos, preocupada com saúde da pele, usa Instagram..."
                   className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm resize-none"
                   rows={3}
@@ -287,12 +301,119 @@ function GerarPageInner() {
               <Label className="text-gray-700 text-xs">
                 Oferta <span className="text-gray-400 font-normal">(opcional)</span>
               </Label>
-              <Input
-                placeholder='Ex: Frete grátis acima de R$150, 10% off na 1ª compra...'
-                className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm"
-                value={estado.oferta}
-                onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "oferta", valor: e.target.value })}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                {(["", "frete", "desconto", "compre_leve", "manual"] as OfertaTipo[]).map((tipo) => {
+                  const meta = {
+                    "":          { icon: "🚫", label: "Nenhuma", sub: "não recomendado" },
+                    frete:       { icon: "🚚", label: "Frete grátis", sub: "" },
+                    desconto:    { icon: "🏷️", label: "% de desconto", sub: "" },
+                    compre_leve: { icon: "🛍️", label: "Compre e Leve", sub: "" },
+                    manual:      { icon: "✏️", label: "Personalizada", sub: "" },
+                  }[tipo]!;
+                  const ativo = estado.ofertaTipo === tipo;
+                  return (
+                    <button
+                      key={tipo === "" ? "nenhuma" : tipo}
+                      type="button"
+                      onClick={() => {
+                        dispatch({ type: "SET_CAMPO", campo: "ofertaTipo", valor: tipo });
+                        dispatch({ type: "SET_CAMPO", campo: "ofertaV1", valor: "" });
+                        dispatch({ type: "SET_CAMPO", campo: "ofertaV2", valor: "" });
+                      }}
+                      className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border text-left text-xs font-medium transition-all ${
+                        ativo && tipo === ""
+                          ? "bg-gray-50 border-gray-300 text-gray-600 shadow-sm"
+                          : ativo
+                          ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
+                          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      }`}
+                    >
+                      <span>{meta.icon}</span>
+                      <span className="mt-0.5">{meta.label}</span>
+                      {meta.sub && (
+                        <span className="text-[10px] font-normal text-gray-400">{meta.sub}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Campos inline por tipo */}
+              {estado.ofertaTipo === "frete" && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 mt-1">
+                  <p className="text-xs text-violet-500 font-medium mb-2">Preencha os valores</p>
+                  <div className="flex items-center gap-1.5 flex-wrap text-sm text-violet-900 font-medium">
+                    <span>Frete grátis acima de</span>
+                    <span>R$</span>
+                    <input
+                      autoFocus
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="150,00"
+                      value={estado.ofertaV1}
+                      onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "ofertaV1", valor: e.target.value })}
+                      className="w-24 rounded-md border border-violet-300 bg-white px-2 py-1 text-sm text-violet-900 font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 placeholder:text-violet-300 text-center"
+                    />
+                    <span>hoje</span>
+                  </div>
+                </div>
+              )}
+
+              {estado.ofertaTipo === "desconto" && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 mt-1">
+                  <p className="text-xs text-violet-500 font-medium mb-2">Preencha os valores</p>
+                  <div className="flex items-center gap-1.5 flex-wrap text-sm text-violet-900 font-medium">
+                    <input
+                      autoFocus
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="10"
+                      value={estado.ofertaV1}
+                      onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "ofertaV1", valor: e.target.value })}
+                      className="w-16 rounded-md border border-violet-300 bg-white px-2 py-1 text-sm text-violet-900 font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 placeholder:text-violet-300 text-center"
+                    />
+                    <span>% off na primeira compra</span>
+                  </div>
+                </div>
+              )}
+
+              {estado.ofertaTipo === "compre_leve" && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 mt-1">
+                  <p className="text-xs text-violet-500 font-medium mb-2">Preencha os valores</p>
+                  <div className="flex items-center gap-1.5 flex-wrap text-sm text-violet-900 font-medium">
+                    <span>Compre</span>
+                    <input
+                      autoFocus
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="2"
+                      value={estado.ofertaV1}
+                      onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "ofertaV1", valor: e.target.value })}
+                      className="w-14 rounded-md border border-violet-300 bg-white px-2 py-1 text-sm text-violet-900 font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 placeholder:text-violet-300 text-center"
+                    />
+                    <span>, leve</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="3"
+                      value={estado.ofertaV2}
+                      onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "ofertaV2", valor: e.target.value })}
+                      className="w-14 rounded-md border border-violet-300 bg-white px-2 py-1 text-sm text-violet-900 font-semibold outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 placeholder:text-violet-300 text-center"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {estado.ofertaTipo === "manual" && (
+                <Textarea
+                  autoFocus
+                  placeholder="Descreva a oferta livremente..."
+                  className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm resize-none mt-1"
+                  rows={2}
+                  value={estado.ofertaV1}
+                  onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "ofertaV1", valor: e.target.value })}
+                />
+              )}
             </div>
 
             {/* Mensagem obrigatória */}
@@ -344,23 +465,31 @@ function GerarPageInner() {
             )}
           </Button>
 
-          {(clienteSelecionado || produtoSelecionado) && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2 shadow-sm">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Selecionado</p>
-              {clienteSelecionado && (
-                <div>
-                  <p className="text-xs text-gray-400">Cliente</p>
-                  <p className="text-sm text-gray-800 font-medium">{clienteSelecionado.nome}</p>
-                </div>
-              )}
-              {produtoSelecionado && (
-                <div>
-                  <p className="text-xs text-gray-400">Produto</p>
-                  <p className="text-sm text-gray-800 font-medium">{produtoSelecionado.nome}</p>
-                </div>
-              )}
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Resumo</p>
+            <div className="space-y-2.5">
+              <ResumoLinha label="Cliente" valor={clienteSelecionado?.nome} />
+              <ResumoLinha label="Produto" valor={produtoSelecionado?.nome} />
+              <ResumoLinha
+                label="Avatar (Persona)"
+                valor={
+                  avatarSelecionadoId === "manual"
+                    ? "Manual"
+                    : avatarSelecionadoId
+                    ? avatares.find((a) => a.id === avatarSelecionadoId)?.nome
+                    : undefined
+                }
+              />
+              <ResumoLinha label="Foco" valor={estado.foco ? FOCO_LABELS[estado.foco as FocoRoteiro] : undefined} />
+              <ResumoLinha label="Formato" valor={estado.formato ? FORMATO_LABELS[estado.formato as FormatoRoteiro] : undefined} />
+              <ResumoLinha label="Oferta" valor={computeOferta(estado) || undefined} />
+              <ResumoLinha label="Mensagem" valor={estado.mensagemObrigatoria || undefined} />
+              <div className="flex justify-between items-baseline gap-2 pt-2.5 border-t border-gray-100">
+                <p className="text-xs text-gray-400 shrink-0">Roteiros</p>
+                <p className="text-xs text-gray-800 font-semibold">{estado.quantidade}</p>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Painel de resultados */}

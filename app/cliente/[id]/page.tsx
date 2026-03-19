@@ -123,7 +123,7 @@ export default function ClientePage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{cliente.nome}</h1>
             <p className="text-gray-500 text-sm mt-1">
-              {produtos.length} {produtos.length === 1 ? "produto" : "produtos"} · {avatares.length} {avatares.length === 1 ? "avatar ICP" : "avatares ICP"}
+              {produtos.length} {produtos.length === 1 ? "produto" : "produtos"} · {avatares.length} {avatares.length === 1 ? "avatar (persona)" : "avatares (persona)"}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function ClientePage() {
           </TabsTrigger>
           <TabsTrigger value="avatares" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-500">
             <UserCircle size={14} className="mr-2" />
-            ICP / Avatares
+            Avatares (Persona)
             {avatares.length > 0 && (
               <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
                 {avatares.length}
@@ -172,7 +172,7 @@ export default function ClientePage() {
         <TabsContent value="avatares">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="font-semibold text-gray-900">ICP / Avatares</h2>
+              <h2 className="font-semibold text-gray-900">Avatares (Persona)</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Defina os perfis de cliente ideal. Eles ficam disponíveis na hora de gerar roteiros.
               </p>
@@ -190,7 +190,7 @@ export default function ClientePage() {
               </div>
               <p className="text-gray-600 font-medium">Nenhum avatar ainda</p>
               <p className="text-gray-400 text-sm mt-1 max-w-xs">
-                Crie avatares ICP para selecionar rapidamente o perfil do cliente ideal na geração de roteiros.
+                Crie avatares (personas) para selecionar rapidamente o perfil do cliente ideal na geração de roteiros.
               </p>
               <Button onClick={handleNewAvatar} variant="outline" className="mt-4 border-gray-200 text-gray-600 hover:bg-gray-50">
                 <Plus size={14} className="mr-2" />
@@ -289,7 +289,7 @@ export default function ClientePage() {
       <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
         <DialogContent className="bg-white border-gray-200 text-gray-900">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">{editAvatar ? "Editar avatar" : "Novo avatar ICP"}</DialogTitle>
+            <DialogTitle className="text-gray-900">{editAvatar ? "Editar avatar" : "Novo avatar (persona)"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-1">
             <div className="space-y-1.5">
