@@ -23,7 +23,7 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
   const qtdProdutos = produtos.length;
 
   return (
-    <Card className="group relative overflow-hidden border border-gray-200 bg-white hover:border-violet-200 hover:shadow-md transition-all duration-200">
+    <Card className="group relative overflow-hidden border border-gray-100 bg-white hover:border-violet-200 hover:shadow-lg hover:shadow-violet-50/50 transition-all duration-200">
       <div className="absolute top-0 left-0 h-0.5 w-full bg-gradient-to-r from-violet-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <CardHeader className="pb-3">
@@ -32,7 +32,7 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
             <h3 className="font-semibold text-gray-900 text-base truncate">
               {cliente.nome}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5 font-normal">
               Criado em {new Date(cliente.criadoEm).toLocaleDateString("pt-BR")}
             </p>
           </div>
@@ -85,8 +85,8 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
         </div>
 
         {cliente.guiaMarca.publicoAlvo && (
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-            <span className="text-gray-300">Público: </span>
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+            <span className="text-gray-400 font-medium">Público: </span>
             {cliente.guiaMarca.publicoAlvo}
           </p>
         )}
@@ -95,7 +95,7 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-1 border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 group/btn"
+            className="w-full mt-1 border-gray-200 bg-white text-gray-600 font-medium hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 group/btn"
           >
             Abrir cliente
             <ArrowRight size={13} className="ml-2 transition-transform group-hover/btn:translate-x-0.5" />

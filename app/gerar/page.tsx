@@ -252,7 +252,7 @@ function GerarPageInner() {
           <Button
             onClick={handleGerar}
             disabled={loading}
-            className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-5 text-sm shadow-sm"
+            className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-5 text-sm shadow-md shadow-violet-200"
           >
             {loading ? (
               <><Loader2 size={16} className="mr-2 animate-spin" />Gerando roteiros...</>

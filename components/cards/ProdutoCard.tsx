@@ -22,7 +22,7 @@ export function ProdutoCard({ produto, clienteNome, onEdit, onDelete }: ProdutoC
   const guiaOk = guiaProdutoCompleto(produto.guia);
 
   return (
-    <Card className="group relative overflow-hidden border border-gray-200 bg-white hover:border-violet-200 hover:shadow-md transition-all duration-200">
+    <Card className="group relative overflow-hidden border border-gray-100 bg-white hover:border-violet-200 hover:shadow-lg hover:shadow-violet-50/50 transition-all duration-200">
       <div className="absolute top-0 left-0 h-0.5 w-full bg-gradient-to-r from-indigo-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <CardHeader className="pb-2">
@@ -68,7 +68,7 @@ export function ProdutoCard({ produto, clienteNome, onEdit, onDelete }: ProdutoC
         </div>
 
         {produto.guia.descricao && (
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
             {produto.guia.descricao}
           </p>
         )}
@@ -78,14 +78,14 @@ export function ProdutoCard({ produto, clienteNome, onEdit, onDelete }: ProdutoC
             <Button
               variant="outline"
               size="sm"
-              className="w-full border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 text-xs"
+              className="w-full border-gray-200 bg-white text-gray-600 font-medium hover:bg-gray-50 text-xs"
             >
               <BookOpen size={12} className="mr-1.5" />
               Editar guia
             </Button>
           </Link>
           <Link href={`/gerar?clienteId=${produto.clienteId}&produtoId=${produto.id}`} className="flex-1">
-            <Button size="sm" className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs">
+            <Button size="sm" className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs shadow-sm shadow-violet-200">
               <Wand2 size={12} className="mr-1.5" />
               Gerar roteiro
             </Button>

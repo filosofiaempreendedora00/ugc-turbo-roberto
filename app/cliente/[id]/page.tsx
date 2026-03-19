@@ -112,7 +112,7 @@ export default function ClientePage() {
               <h2 className="font-semibold text-gray-900">Produtos</h2>
               <p className="text-sm text-gray-500 mt-1">Gerencie os produtos desse cliente e edite os guias.</p>
             </div>
-            <Button onClick={handleNewProduto} className="bg-violet-600 hover:bg-violet-500 text-white">
+            <Button onClick={handleNewProduto} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
               <Plus size={15} className="mr-2" />
               Adicionar produto
             </Button>
@@ -120,8 +120,8 @@ export default function ClientePage() {
 
           {produtos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-gray-200 bg-white">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                <Package size={20} className="text-gray-400" />
+              <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center mb-4">
+                <Package size={20} className="text-violet-400" />
               </div>
               <p className="text-gray-600 font-medium">Nenhum produto ainda</p>
               <p className="text-gray-400 text-sm mt-1 max-w-xs">Adicione um produto para começar a gerar roteiros.</p>

@@ -81,7 +81,7 @@ export default function DashboardPage() {
               : `${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"} cadastrado${clientes.length === 1 ? "" : "s"}`}
           </p>
         </div>
-        <Button onClick={handleNewCliente} className="bg-violet-600 hover:bg-violet-500 text-white">
+        <Button onClick={handleNewCliente} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
           <Plus size={15} className="mr-2" />
           Novo cliente
         </Button>
@@ -101,14 +101,14 @@ export default function DashboardPage() {
 
       {clientes.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
-            <Users size={28} className="text-gray-400" />
+          <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mb-5">
+            <Users size={28} className="text-violet-400" />
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente ainda</h2>
           <p className="text-gray-500 text-sm max-w-xs">
             Comece criando o primeiro cliente. Cada cliente tem seu guia de marca e lista de produtos.
           </p>
-          <Button onClick={handleNewCliente} className="mt-6 bg-violet-600 hover:bg-violet-500 text-white">
+          <Button onClick={handleNewCliente} className="mt-6 bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
             <Plus size={15} className="mr-2" />
             Criar primeiro cliente
           </Button>
