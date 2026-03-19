@@ -246,10 +246,10 @@ function GerarPageInner() {
               <Label className="text-gray-700 text-xs">Foco do roteiro</Label>
               <div className="grid grid-cols-2 gap-2">
                 {FOCOS.map((foco) => {
-                  const meta = {
+                  const meta = ({
                     dor: { icon: "😩", desc: "Problema que o produto resolve" },
                     "benefício": { icon: "🤩", desc: "Vantagens e resultados obtidos" },
-                  }[foco];
+                  } as Record<string, { icon: string; desc: string }>)[foco];
                   return (
                     <button
                       key={foco}

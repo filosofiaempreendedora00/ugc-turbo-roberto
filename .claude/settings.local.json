@@ -15,7 +15,14 @@
       "Read(//Users/roberto/**)",
       "Bash(mkdir -p ~/bin)",
       "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/node ~/bin/node)",
-      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/npm ~/bin/npm)"
+      "Bash(ln -sf /Users/roberto/.nvm/versions/node/v20.20.1/bin/npm ~/bin/npm)",
+      "Bash(npm run:*)",
+      "Bash(/usr/local/bin/npm run:*)",
+      "Bash(ls /usr/local/bin/node*)",
+      "Bash(ls ~/.nvm/versions/node/*/bin/npm)",
+      "Bash(~/.nvm/versions/node/v20.20.1/bin/npm run:*)",
+      "Bash(~/.nvm/versions/node/v20.20.1/bin/node --version)",
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v20.20.1/bin:$PATH\" npm run build)"
     ]
   }
 }
