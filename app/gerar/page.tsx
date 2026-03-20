@@ -12,7 +12,6 @@ import {
   Produto, Roteiro, FOCO_LABELS, FORMATO_ICONS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
-import { gerarRoteiros } from "@/lib/roteiro-generator";
 import { ChevronDown, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -109,7 +108,7 @@ function GerarPageInner() {
     setRoteiros([]);
   }
 
-  function handleGerar() {
+  async function handleGerar() {
     if (!estado.clienteId) { toast.error("Selecione um cliente."); return; }
     if (!estado.produtoId) { toast.error("Selecione um produto."); return; }
     if (!estado.foco) { toast.error("Escolha o foco do roteiro."); return; }
@@ -119,26 +118,44 @@ function GerarPageInner() {
     const produto = getProdutoById(estado.produtoId);
     if (!cliente || !produto) { toast.error("Cliente ou produto não encontrado."); return; }
 
+    const config: ConfiguracaoGeracao = {
+      clienteId: estado.clienteId,
+      produtoId: estado.produtoId,
+      icp: estado.icp,
+      foco: estado.foco as FocoRoteiro,
+      formato: estado.formato as FormatoRoteiro,
+      oferta: computeOferta(estado),
+      mensagemObrigatoria: estado.mensagemObrigatoria,
+      quantidade: Number(estado.quantidade),
+    };
+
     setLoading(true);
-    setTimeout(() => {
-      const config: ConfiguracaoGeracao = {
-        clienteId: estado.clienteId,
-        produtoId: estado.produtoId,
-        icp: estado.icp,
-        foco: estado.foco as FocoRoteiro,
-        formato: estado.formato as FormatoRoteiro,
-        oferta: computeOferta(estado),
-        mensagemObrigatoria: estado.mensagemObrigatoria,
-        quantidade: Number(estado.quantidade),
-      };
-      const gerados = gerarRoteiros(cliente, produto, config);
-      const roteirosFull: Roteiro[] = gerados.map((r, i) => ({
-        ...r, id: `${Date.now()}-${i}`, geradoEm: new Date().toISOString(),
+    try {
+      const res = await fetch("/api/gerar-roteiros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente, produto, config }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Erro ao gerar roteiros."); return; }
+      const roteirosFull: Roteiro[] = data.roteiros.map((r: Omit<Roteiro, "id" | "geradoEm" | "clienteId" | "produtoId" | "icp" | "foco" | "formato" | "mensagemObrigatoria">, i: number) => ({
+        ...r,
+        id: `${Date.now()}-${i}`,
+        geradoEm: new Date().toISOString(),
+        clienteId: config.clienteId,
+        produtoId: config.produtoId,
+        icp: config.icp,
+        foco: config.foco,
+        formato: config.formato,
+        mensagemObrigatoria: config.mensagemObrigatoria,
       }));
       setRoteiros(roteirosFull);
-      setLoading(false);
       toast.success(`${roteirosFull.length} roteiro${roteirosFull.length > 1 ? "s" : ""} gerado${roteirosFull.length > 1 ? "s" : ""}!`);
-    }, 900);
+    } catch {
+      toast.error("Erro de conexão ao gerar roteiros.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const clienteSelecionado = clientes.find((c) => c.id === estado.clienteId);
