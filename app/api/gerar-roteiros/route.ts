@@ -105,47 +105,28 @@ Você **não** escreve copy genérico. Você escreve falas que a pessoa vai fala
 
 ## ESTRUTURA DO OUTPUT
 
-Retorne um array JSON com exatamente \`quantidade\` roteiros. Cada roteiro segue este schema:
+Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma opção de abertura diferente — o criador vai escolher o que preferir.
 
 \`\`\`json
-[
-  {
-    "titulo": "string curto e descritivo do roteiro",
-    "cenas": [
-      {
-        "cena": 1,
-        "fala": "O texto exato que o criador vai falar. Conversacional, natural, sem robótica.",
-        "briefingFilmagem": "Instrução técnica para o criador: ângulo de câmera, expressão, movimento, o que mostrar, iluminação, ritmo. Seja específico e prático."
-      }
-    ]
-  }
-]
+{
+  "titulo": "string curto e descritivo do roteiro",
+  "hooks": [
+    "Hook 1: texto exato que o criador vai falar na abertura. Máximo 15 palavras.",
+    "Hook 2: variação com angulação emocional diferente. Máximo 15 palavras.",
+    "Hook 3: variação com estrutura diferente. Máximo 15 palavras.",
+    "Hook 4: variação. Máximo 15 palavras.",
+    "Hook 5: variação. Máximo 15 palavras."
+  ]
+}
 \`\`\`
 
-### Sobre o campo \`briefingFilmagem\`
-- Escreva para alguém que nunca filmou UGC antes
-- Inclua: ângulo de câmera, o que mostrar (rosto, produto, mãos, ambiente), expressão/emoção, movimento da câmera, timing
-- Máximo 2 linhas, linguagem simples
-- Exemplos bons:
-  - "Close no rosto, câmera na altura dos olhos. Fundo desfocado. Expressão de alívio ao finalizar a frase."
-  - "Câmera de cima mostrando as mãos abrindo a embalagem devagar. Iluminação natural da janela. Não apareça o rosto."
-  - "Câmera angled 45°, mostrando corpo inteiro em frente ao espelho. Girar levemente no final da fala."
-
----
-
-## REGRAS DE QUALIDADE E VARIAÇÃO
-
-Quando \`quantidade > 1\`:
-- Cada roteiro deve ter um hook **completamente diferente** — estrutura e angulação distintas
-- Variar a abertura emocional: um pode ser curioso, outro confessional, outro provocativo
-- O mesmo produto pode ser abordado por ângulos diferentes: funcional, emocional, social, racional
-- Nunca repetir a mesma frase ou estrutura entre roteiros
-
-Para garantir alta conversão em todos:
-- Todo roteiro tem 4–6 cenas (não mais, não menos)
-- Toda cena 1 para o scroll em 2 segundos
-- Toda cena final tem CTA claro e direto
-- O produto/marca aparece com naturalidade (nunca como "jabá")
+### Regras dos 5 hooks
+- Cada hook deve ter uma **estrutura e angulação emocional completamente diferente**
+- Variar entre: pergunta que dói, afirmação chocante, POV/situação, segredo/revelação, resultado impossível, contradição
+- Todos devem tocar em dor ou benefício de forma sucinta
+- Nenhum pode começar igual ao outro (nem a mesma palavra de abertura)
+- Máximo 15 palavras cada
+- Proibido: "Olá!", "Oi pessoal", "Hoje vou falar sobre", "Esse vídeo é sobre"
 
 ---
 
@@ -174,7 +155,7 @@ Para garantir alta conversão em todos:
 Entregue apenas o JSON. Sem explicações antes ou depois.`;
 
 function buildUserPrompt(cliente: Cliente, produto: Produto, config: ConfiguracaoGeracao): string {
-  return `Gere ${config.quantidade} roteiro(s) UGC com os seguintes dados:
+  return `Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:
 
 ## MARCA
 - Nome: ${cliente.nome}
@@ -198,8 +179,7 @@ function buildUserPrompt(cliente: Cliente, produto: Produto, config: Configuraca
 - Foco: ${config.foco}
 - Formato: ${config.formato}
 - Oferta específica: ${config.oferta || "—"}
-- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "—"}
-- Quantidade de roteiros: ${config.quantidade}`;
+- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "—"}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -233,9 +213,9 @@ export async function POST(request: NextRequest) {
     const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
     const jsonStr = (jsonMatch[1] ?? raw).trim();
 
-    const roteiros = JSON.parse(jsonStr);
+    const roteiro = JSON.parse(jsonStr);
 
-    return NextResponse.json({ roteiros });
+    return NextResponse.json({ roteiro });
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       return NextResponse.json({ error: `Erro da API: ${error.message}` }, { status: error.status ?? 500 });

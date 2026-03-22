@@ -56,8 +56,8 @@ export default function ClientePage() {
   function handleProdutoSuccess(produto: Produto) {
     setDialogOpen(false);
     setEditProduto(undefined);
-    loadData();
     toast.success(editProduto ? `${produto.nome} atualizado.` : `${produto.nome} adicionado.`);
+    router.push("/dashboard");
   }
 
   function handleDeleteConfirm() {
@@ -71,6 +71,7 @@ export default function ClientePage() {
   function handleGuiaMarcaSuccess(c: Cliente) {
     setCliente(c);
     toast.success("Guia da marca salvo!");
+    router.push("/dashboard");
   }
 
   // ─── Avatar handlers ─────────────────────────────────────────────────────────

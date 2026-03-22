@@ -81,7 +81,8 @@ export interface Roteiro {
   foco: FocoRoteiro;
   formato: FormatoRoteiro;
   mensagemObrigatoria: string;
-  cenas: CenaRoteiro[];
+  hooks: string[];
+  cenas?: CenaRoteiro[];
   geradoEm: string;
 }
 
@@ -93,7 +94,6 @@ export interface ConfiguracaoGeracao {
   formato: FormatoRoteiro;
   oferta: string;
   mensagemObrigatoria: string;
-  quantidade: number;
 }
 
 export const FORMATO_LABELS: Record<FormatoRoteiro, string> = {

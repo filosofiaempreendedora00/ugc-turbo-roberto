@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoteiroTable } from "@/components/roteiro/RoteiroTable";
 import {
-  Cliente, ConfiguracaoGeracao, FocoRoteiro, FormatoRoteiro,
+  CenaRoteiro, Cliente, ConfiguracaoGeracao, FocoRoteiro, FormatoRoteiro,
   Produto, Roteiro, FOCO_LABELS, FORMATO_ICONS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
-import { ChevronDown, Loader2, Wand2 } from "lucide-react";
+import { ChevronDown, Lock, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 const FOCOS: FocoRoteiro[] = ["dor", "benefício"];
@@ -30,14 +30,13 @@ type Estado = {
   ofertaV1: string;
   ofertaV2: string;
   mensagemObrigatoria: string;
-  quantidade: number;
 };
 
-type Acao = { type: "SET_CAMPO"; campo: keyof Estado; valor: string | number };
+type Acao = { type: "SET_CAMPO"; campo: keyof Estado; valor: string };
 
 const ESTADO_INICIAL: Estado = {
-  clienteId: "", produtoId: "", icp: "", foco: "", formato: "",
-  ofertaTipo: "", ofertaV1: "", ofertaV2: "", mensagemObrigatoria: "", quantidade: 3,
+  clienteId: "", produtoId: "", icp: "", foco: "", formato: "face_to_camera",
+  ofertaTipo: "", ofertaV1: "", ofertaV2: "", mensagemObrigatoria: "",
 };
 
 function computeOferta(estado: Estado): string {
@@ -75,6 +74,8 @@ function GerarPageInner() {
   const [avatarSelecionadoId, setAvatarSelecionadoId] = useState("");
   const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cenesGeradas, setCenesGeradas] = useState<{ [id: string]: CenaRoteiro[] }>({});
+  const [cenesLoading, setCenesLoading] = useState<{ [id: string]: boolean }>({});
 
   useEffect(() => {
     const todos = getClientes();
@@ -123,10 +124,9 @@ function GerarPageInner() {
       produtoId: estado.produtoId,
       icp: estado.icp,
       foco: estado.foco as FocoRoteiro,
-      formato: estado.formato as FormatoRoteiro,
+      formato: "face_to_camera",
       oferta: computeOferta(estado),
       mensagemObrigatoria: estado.mensagemObrigatoria,
-      quantidade: Number(estado.quantidade),
     };
 
     setLoading(true);
@@ -137,10 +137,10 @@ function GerarPageInner() {
         body: JSON.stringify({ cliente, produto, config }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error ?? "Erro ao gerar roteiros."); return; }
-      const roteirosFull: Roteiro[] = data.roteiros.map((r: Omit<Roteiro, "id" | "geradoEm" | "clienteId" | "produtoId" | "icp" | "foco" | "formato" | "mensagemObrigatoria">, i: number) => ({
-        ...r,
-        id: `${Date.now()}-${i}`,
+      if (!res.ok) { toast.error(data.error ?? "Erro ao gerar roteiro."); return; }
+      const roteiroFull: Roteiro = {
+        ...data.roteiro,
+        id: `${Date.now()}`,
         geradoEm: new Date().toISOString(),
         clienteId: config.clienteId,
         produtoId: config.produtoId,
@@ -148,13 +148,50 @@ function GerarPageInner() {
         foco: config.foco,
         formato: config.formato,
         mensagemObrigatoria: config.mensagemObrigatoria,
-      }));
-      setRoteiros(roteirosFull);
-      toast.success(`${roteirosFull.length} roteiro${roteirosFull.length > 1 ? "s" : ""} gerado${roteirosFull.length > 1 ? "s" : ""}!`);
+      };
+      setRoteiros([roteiroFull]);
+      setCenesGeradas({});
+      toast.success("Roteiro gerado!");
     } catch {
-      toast.error("Erro de conexão ao gerar roteiros.");
+      toast.error("Erro de conexão ao gerar roteiro.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGerarCenas(roteiroId: string) {
+    const roteiro = roteiros.find((r) => r.id === roteiroId);
+    if (!roteiro) return;
+    const cliente = getClienteById(estado.clienteId);
+    const produto = getProdutoById(estado.produtoId);
+    if (!cliente || !produto) return;
+
+    setCenesLoading((prev) => ({ ...prev, [roteiroId]: true }));
+    try {
+      const res = await fetch("/api/gerar-cenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente,
+          produto,
+          config: {
+            icp: roteiro.icp,
+            foco: roteiro.foco,
+            formato: roteiro.formato,
+            oferta: computeOferta(estado),
+            mensagemObrigatoria: roteiro.mensagemObrigatoria,
+          },
+          roteiro,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Erro ao gerar cenas."); return; }
+      setCenesGeradas((prev) => ({ ...prev, [roteiroId]: data.cenas }));
+      toast.success("Briefing de cenas gerado!");
+    } catch {
+      toast.error("Erro de conexão ao gerar cenas.");
+    } finally {
+      setCenesLoading((prev) => ({ ...prev, [roteiroId]: false }));
     }
   }
 
@@ -295,21 +332,31 @@ function GerarPageInner() {
             <div className="space-y-2">
               <Label className="text-gray-700 text-xs">Formato</Label>
               <div className="grid grid-cols-2 gap-2">
-                {FORMATOS.map((formato) => (
-                  <button
-                    key={formato}
-                    type="button"
-                    onClick={() => dispatch({ type: "SET_CAMPO", campo: "formato", valor: formato })}
-                    className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ${
-                      estado.formato === formato
-                        ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    <span className="mr-1.5">{FORMATO_ICONS[formato]}</span>
-                    {FORMATO_LABELS[formato]}
-                  </button>
-                ))}
+                {FORMATOS.map((formato) => {
+                  const disponivel = formato === "face_to_camera";
+                  const ativo = estado.formato === formato;
+                  return (
+                    <button
+                      key={formato}
+                      type="button"
+                      disabled={!disponivel}
+                      onClick={() => disponivel && dispatch({ type: "SET_CAMPO", campo: "formato", valor: formato })}
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left relative ${
+                        ativo
+                          ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                          : disponivel
+                          ? "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                          : "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
+                      }`}
+                    >
+                      <span className="mr-1.5">{FORMATO_ICONS[formato]}</span>
+                      {FORMATO_LABELS[formato]}
+                      {!disponivel && (
+                        <Lock size={9} className="absolute top-1.5 right-1.5 text-gray-300" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -446,28 +493,6 @@ function GerarPageInner() {
               />
             </div>
 
-            {/* Quantidade */}
-            <div className="space-y-2">
-              <Label className="text-gray-700 text-xs">
-                Quantidade de roteiros <span className="text-gray-400 font-normal">({estado.quantidade})</span>
-              </Label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 5, 10].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => dispatch({ type: "SET_CAMPO", campo: "quantidade", valor: n })}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      Number(estado.quantidade) === n
-                        ? "bg-gray-800 border-gray-800 text-white"
-                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <Button
@@ -476,9 +501,9 @@ function GerarPageInner() {
             className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-5 text-sm shadow-md shadow-violet-200"
           >
             {loading ? (
-              <><Loader2 size={16} className="mr-2 animate-spin" />Gerando roteiros...</>
+              <><Loader2 size={16} className="mr-2 animate-spin" />Gerando roteiro...</>
             ) : (
-              <><Wand2 size={16} className="mr-2" />Gerar roteiros</>
+              <><Wand2 size={16} className="mr-2" />Gerar roteiro</>
             )}
           </Button>
 
@@ -501,10 +526,6 @@ function GerarPageInner() {
               <ResumoLinha label="Formato" valor={estado.formato ? FORMATO_LABELS[estado.formato as FormatoRoteiro] : undefined} />
               <ResumoLinha label="Oferta" valor={computeOferta(estado) || undefined} />
               <ResumoLinha label="Mensagem" valor={estado.mensagemObrigatoria || undefined} />
-              <div className="flex justify-between items-baseline gap-2 pt-2.5 border-t border-gray-100">
-                <p className="text-xs text-gray-400 shrink-0">Roteiros</p>
-                <p className="text-xs text-gray-800 font-semibold">{estado.quantidade}</p>
-              </div>
             </div>
           </div>
         </div>
@@ -519,17 +540,18 @@ function GerarPageInner() {
                 </div>
                 <div className="absolute inset-0 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
               </div>
-              <p className="text-gray-700 font-medium">Gerando roteiros...</p>
-              <p className="text-gray-400 text-sm mt-1">
-                Criando {estado.quantidade} roteiro{Number(estado.quantidade) > 1 ? "s" : ""}
-              </p>
+              <p className="text-gray-700 font-medium">Gerando roteiro...</p>
+              <p className="text-gray-400 text-sm mt-1">Criando 5 hooks de alta conversão</p>
             </div>
           ) : (
             <RoteiroTable
               roteiros={roteiros}
               onRegenerate={handleGerar}
-              onGerarNovo={() => setRoteiros([])}
+              onGerarNovo={() => { setRoteiros([]); setCenesGeradas({}); }}
               loading={loading}
+              cenesGeradas={cenesGeradas}
+              cenesLoading={cenesLoading}
+              onGerarCenas={handleGerarCenas}
             />
           )}
         </div>

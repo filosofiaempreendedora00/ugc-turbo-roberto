@@ -22,7 +22,18 @@
       "Bash(ls ~/.nvm/versions/node/*/bin/npm)",
       "Bash(~/.nvm/versions/node/v20.20.1/bin/npm run:*)",
       "Bash(~/.nvm/versions/node/v20.20.1/bin/node --version)",
-      "Bash(PATH=\"$HOME/.nvm/versions/node/v20.20.1/bin:$PATH\" npm run build)"
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v20.20.1/bin:$PATH\" npm run build)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm install:*)",
+      "Bash(/usr/local/bin/npm install:*)",
+      "Bash(/opt/homebrew/bin/npm install:*)",
+      "Bash(~/.nvm/versions/node/v20.20.1/bin/npm install:*)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(env)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -X POST https://ugc-turbo-roberto.onrender.com/api/gerar-roteiros -H \"Content-Type: application/json\" -d '{\"\"cliente\"\":{\"\"nome\"\":\"\"Teste\"\",\"\"guiaMarca\"\":{\"\"tomDeVoz\"\":\"\"\"\",\"\"publicoAlvo\"\":\"\"\"\",\"\"diferenciais\"\":\"\"\"\",\"\"posicionamento\"\":\"\"\"\",\"\"observacoes\"\":\"\"\"\"}},\"\"produto\"\":{\"\"nome\"\":\"\"Produto Teste\"\",\"\"guia\"\":{\"\"descricao\"\":\"\"\"\",\"\"beneficios\"\":\"\"\"\",\"\"doresQueResolve\"\":\"\"\"\",\"\"diferenciais\"\":\"\"\"\",\"\"oferta\"\":\"\"\"\",\"\"observacoes\"\":\"\"\"\"}},\"\"config\"\":{\"\"icp\"\":\"\"\"\",\"\"foco\"\":\"\"Conversão\"\",\"\"formato\"\":\"\"Problema-Solução\"\",\"\"oferta\"\":\"\"\"\",\"\"mensagemObrigatoria\"\":\"\"\"\",\"\"quantidade\"\":1}}')"
     ]
   }
 }
