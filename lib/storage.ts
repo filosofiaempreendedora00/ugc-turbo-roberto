@@ -92,14 +92,14 @@ export function getAvataresByCliente(clienteId: string): AvatarICP[] {
   return getClienteById(clienteId)?.avatares ?? [];
 }
 
-export function addAvatar(clienteId: string, nome: string, descricao: string): Cliente {
+export function addAvatar(clienteId: string, dados: Omit<AvatarICP, "id">): Cliente {
   const cliente = getClienteById(clienteId);
   if (!cliente) throw new Error("Cliente não encontrado");
-  const avatar: AvatarICP = { id: generateId(), nome, descricao };
+  const avatar: AvatarICP = { id: generateId(), ...dados };
   return updateCliente(clienteId, { avatares: [...(cliente.avatares ?? []), avatar] });
 }
 
-export function updateAvatar(clienteId: string, avatarId: string, dados: { nome: string; descricao: string }): Cliente {
+export function updateAvatar(clienteId: string, avatarId: string, dados: Partial<Omit<AvatarICP, "id">>): Cliente {
   const cliente = getClienteById(clienteId);
   if (!cliente) throw new Error("Cliente não encontrado");
   const avatares = (cliente.avatares ?? []).map((a) =>
@@ -117,8 +117,18 @@ export function deleteAvatar(clienteId: string, avatarId: string): Cliente {
 
 // ─── PRODUTOS ────────────────────────────────────────────────────────────────
 
+const EMPTY_GUIA: GuiaProduto = {
+  descricao: "", beneficios: "", doresQueResolve: "",
+  diferenciais: "", oferta: "", observacoes: "",
+};
+
 export function getProdutos(): Produto[] {
-  return safeGet<Produto>(KEYS.PRODUTOS);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return safeGet<any>(KEYS.PRODUTOS).map((p: any) => ({
+    ...p,
+    // migrate legacy key "guiaProduto" → "guia"
+    guia: p.guia ?? p.guiaProduto ?? { ...EMPTY_GUIA },
+  })) as Produto[];
 }
 
 export function getProdutosByCliente(clienteId: string): Produto[] {

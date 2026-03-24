@@ -4,18 +4,16 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuiaMarcaForm } from "@/components/forms/GuiaMarcaForm";
+import { GuiaAvatarForm } from "@/components/forms/GuiaAvatarForm";
 import { ProdutoForm } from "@/components/forms/ProdutoForm";
 import { ProdutoCard } from "@/components/cards/ProdutoCard";
 import { Cliente, Produto, AvatarICP } from "@/types";
-import { getClienteById, getProdutosByCliente, deleteProduto, addAvatar, updateAvatar, deleteAvatar } from "@/lib/storage";
-import { ArrowLeft, Package, Plus, BookOpen, Pencil, Trash2, UserCircle } from "lucide-react";
+import { getClienteById, getProdutosByCliente, deleteProduto, deleteAvatar } from "@/lib/storage";
+import { ArrowLeft, Package, Plus, BookOpen, Pencil, Trash2, UserCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ClientePage() {
@@ -27,6 +25,7 @@ export default function ClientePage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
   // Produto dialog
+  const [activeTab, setActiveTab] = useState("guia");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduto, setEditProduto] = useState<Produto | undefined>(undefined);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -34,8 +33,6 @@ export default function ClientePage() {
   // Avatar dialog
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [editAvatar, setEditAvatar] = useState<AvatarICP | undefined>(undefined);
-  const [avatarNome, setAvatarNome] = useState("");
-  const [avatarDescricao, setAvatarDescricao] = useState("");
   const [deleteAvatarId, setDeleteAvatarId] = useState<string | null>(null);
 
   function loadData() {
@@ -57,7 +54,7 @@ export default function ClientePage() {
     setDialogOpen(false);
     setEditProduto(undefined);
     toast.success(editProduto ? `${produto.nome} atualizado.` : `${produto.nome} adicionado.`);
-    router.push("/dashboard");
+    loadData();
   }
 
   function handleDeleteConfirm() {
@@ -71,36 +68,23 @@ export default function ClientePage() {
   function handleGuiaMarcaSuccess(c: Cliente) {
     setCliente(c);
     toast.success("Guia da marca salvo!");
-    router.push("/dashboard");
   }
 
   // ─── Avatar handlers ─────────────────────────────────────────────────────────
   function handleNewAvatar() {
     setEditAvatar(undefined);
-    setAvatarNome("");
-    setAvatarDescricao("");
     setAvatarDialogOpen(true);
   }
 
   function handleEditAvatar(avatar: AvatarICP) {
     setEditAvatar(avatar);
-    setAvatarNome(avatar.nome);
-    setAvatarDescricao(avatar.descricao);
     setAvatarDialogOpen(true);
   }
 
-  function handleSaveAvatar() {
-    if (!avatarNome.trim()) { toast.error("Informe o nome do avatar."); return; }
-    if (editAvatar) {
-      const updated = updateAvatar(clienteId, editAvatar.id, { nome: avatarNome.trim(), descricao: avatarDescricao.trim() });
-      setCliente(updated);
-      toast.success("Avatar atualizado.");
-    } else {
-      const updated = addAvatar(clienteId, avatarNome.trim(), avatarDescricao.trim());
-      setCliente(updated);
-      toast.success("Avatar adicionado.");
-    }
+  function handleAvatarSuccess(updatedCliente: Cliente) {
+    setCliente(updatedCliente);
     setAvatarDialogOpen(false);
+    toast.success(editAvatar ? "Avatar atualizado." : "Avatar criado!");
   }
 
   function handleDeleteAvatarConfirm() {
@@ -130,112 +114,45 @@ export default function ClientePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="guia" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-gray-100 border border-gray-200 p-1">
           <TabsTrigger value="guia" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-500">
-            <BookOpen size={14} className="mr-2" />
+            <span className="mr-1.5 text-[10px] font-bold opacity-40">1</span>
+            <BookOpen size={14} className="mr-1.5" />
             Guia da marca
           </TabsTrigger>
-          <TabsTrigger value="avatares" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-500">
-            <UserCircle size={14} className="mr-2" />
-            Avatares (Persona)
-            {avatares.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
-                {avatares.length}
-              </span>
-            )}
-          </TabsTrigger>
           <TabsTrigger value="produtos" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-500">
-            <Package size={14} className="mr-2" />
+            <span className="mr-1.5 text-[10px] font-bold opacity-40">2</span>
+            <Package size={14} className="mr-1.5" />
             Produtos
             {produtos.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
-                {produtos.length}
-              </span>
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">{produtos.length}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="avatares" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-500">
+            <span className="mr-1.5 text-[10px] font-bold opacity-40">3</span>
+            <UserCircle size={14} className="mr-1.5" />
+            Avatares
+            {avatares.length > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">{avatares.length}</span>
             )}
           </TabsTrigger>
         </TabsList>
 
-        {/* ─── Guia da Marca ─────────────────────────────────────────────────── */}
+        {/* ─── 1. Guia da Marca ────────────────────────────────────────────────── */}
         <TabsContent value="guia">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <h2 className="font-semibold text-gray-900">Guia da Marca</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Essas informações são usadas como base para todos os roteiros desse cliente.
-              </p>
-            </div>
-            <GuiaMarcaForm cliente={cliente} onSuccess={handleGuiaMarcaSuccess} />
+          <div className="rounded-2xl border border-gray-200 bg-white px-8 py-7 shadow-sm">
+            <GuiaMarcaForm
+              cliente={cliente}
+              onSuccess={handleGuiaMarcaSuccess}
+              onBack={() => router.push("/dashboard")}
+              onNext={() => setActiveTab("produtos")}
+              nextLabel="Produtos"
+            />
           </div>
         </TabsContent>
 
-        {/* ─── ICP / Avatares ────────────────────────────────────────────────── */}
-        <TabsContent value="avatares">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-semibold text-gray-900">Avatares (Persona)</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Defina os perfis de cliente ideal. Eles ficam disponíveis na hora de gerar roteiros.
-              </p>
-            </div>
-            <Button onClick={handleNewAvatar} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
-              <Plus size={15} className="mr-2" />
-              Adicionar avatar
-            </Button>
-          </div>
-
-          {avatares.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-gray-200 bg-white">
-              <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center mb-4">
-                <UserCircle size={22} className="text-violet-400" />
-              </div>
-              <p className="text-gray-600 font-medium">Nenhum avatar ainda</p>
-              <p className="text-gray-400 text-sm mt-1 max-w-xs">
-                Crie avatares (personas) para selecionar rapidamente o perfil do cliente ideal na geração de roteiros.
-              </p>
-              <Button onClick={handleNewAvatar} variant="outline" className="mt-4 border-gray-200 text-gray-600 hover:bg-gray-50">
-                <Plus size={14} className="mr-2" />
-                Adicionar avatar
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {avatares.map((avatar, i) => (
-                <div key={avatar.id} className="rounded-xl border border-gray-100 bg-white p-4 flex items-start justify-between gap-3 shadow-sm">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-violet-600">{i + 1}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm">{avatar.nome}</p>
-                      {avatar.descricao && (
-                        <p className="text-gray-500 text-xs mt-1 leading-relaxed">{avatar.descricao}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      size="icon" variant="ghost"
-                      className="h-7 w-7 text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                      onClick={() => handleEditAvatar(avatar)}
-                    >
-                      <Pencil size={13} />
-                    </Button>
-                    <Button
-                      size="icon" variant="ghost"
-                      className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
-                      onClick={() => setDeleteAvatarId(avatar.id)}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* ─── Produtos ──────────────────────────────────────────────────────── */}
+        {/* ─── 2. Produtos ─────────────────────────────────────────────────────── */}
         <TabsContent value="produtos">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -273,6 +190,124 @@ export default function ClientePage() {
               ))}
             </div>
           )}
+
+          <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
+            <button onClick={() => setActiveTab("guia")} className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors">
+              <ChevronLeft size={14} />
+              Voltar ao Guia
+            </button>
+            <button onClick={() => setActiveTab("avatares")} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200 transition-all">
+              Ir para Avatares
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </TabsContent>
+
+        {/* ─── 3. Avatares ─────────────────────────────────────────────────────── */}
+        <TabsContent value="avatares">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="font-semibold text-gray-900">Avatares (Persona)</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Defina os perfis de cliente ideal. Ficam disponíveis na hora de gerar roteiros.
+              </p>
+            </div>
+            <Button onClick={handleNewAvatar} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
+              <Plus size={15} className="mr-2" />
+              Adicionar avatar
+            </Button>
+          </div>
+
+          {avatares.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-gray-200 bg-white">
+              <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center mb-4">
+                <UserCircle size={22} className="text-violet-400" />
+              </div>
+              <p className="text-gray-600 font-medium">Nenhum avatar ainda</p>
+              <p className="text-gray-400 text-sm mt-1 max-w-xs">
+                Crie avatares (personas) para selecionar rapidamente o perfil do cliente ideal.
+              </p>
+              <Button onClick={handleNewAvatar} variant="outline" className="mt-4 border-gray-200 text-gray-600 hover:bg-gray-50">
+                <Plus size={14} className="mr-2" />
+                Adicionar avatar
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {avatares.map((avatar, i) => {
+                const guiaScore = [avatar.idadeRange || avatar.genero || avatar.situacao, avatar.dores?.length, avatar.desejos?.length, avatar.frustracao, avatar.objecoes?.length].filter(Boolean).length;
+                const guiaOk = guiaScore >= 5;
+                return (
+                  <div key={avatar.id} className="group relative bg-white rounded-2xl ring-1 ring-gray-200/80 overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-100/50 hover:ring-violet-200/70">
+                    <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-violet-500 to-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-violet-600">{i + 1}</span>
+                          </div>
+                          <p className="font-semibold text-gray-900 text-sm truncate">{avatar.nome}</p>
+                        </div>
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => handleEditAvatar(avatar)}>
+                            <Pencil size={13} />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50" onClick={() => setDeleteAvatarId(avatar.id)}>
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Guia score */}
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${guiaOk ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${guiaOk ? "bg-emerald-500" : "bg-amber-400"}`} />
+                          {guiaOk ? "Guia completo" : `Guia ${guiaScore}/5`}
+                        </span>
+                        {(avatar.idadeRange || avatar.genero) && (
+                          <span className="text-xs text-gray-400">
+                            {[avatar.idadeRange, avatar.genero].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Dores preview */}
+                      {avatar.dores && avatar.dores.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {avatar.dores.slice(0, 3).map(d => (
+                            <span key={d} className="inline-flex px-2 py-0.5 rounded-md text-xs bg-gray-50 text-gray-500 ring-1 ring-gray-100">{d}</span>
+                          ))}
+                          {avatar.dores.length > 3 && (
+                            <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-gray-50 text-gray-400 ring-1 ring-gray-100">+{avatar.dores.length - 3}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-300 italic">Dores não definidas ainda.</p>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex px-5 py-3 border-t border-gray-100 bg-gray-50/60 group-hover:bg-violet-50/40 transition-colors duration-200">
+                      <button
+                        onClick={() => handleEditAvatar(avatar)}
+                        className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-violet-300 hover:text-violet-700 transition-all"
+                      >
+                        <Pencil size={11} />
+                        Editar guia do avatar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-start mt-8 pt-5 border-t border-gray-100">
+            <button onClick={() => setActiveTab("produtos")} className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors">
+              <ChevronLeft size={14} />
+              Voltar a Produtos
+            </button>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -288,39 +323,18 @@ export default function ClientePage() {
 
       {/* ─── Dialog: Avatar ────────────────────────────────────────────────────── */}
       <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
-        <DialogContent className="bg-white border-gray-200 text-gray-900">
+        <DialogContent className="bg-white border-gray-200 text-gray-900 sm:max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">{editAvatar ? "Editar avatar" : "Novo avatar (persona)"}</DialogTitle>
+            <DialogTitle className="text-gray-900">
+              {editAvatar ? "Editar avatar" : "Novo avatar (persona)"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-1">
-            <div className="space-y-1.5">
-              <Label className="text-gray-700 text-sm">Nome do avatar</Label>
-              <Input
-                placeholder="Ex: Mãe Fitness 35+, Empreendedor Digital..."
-                value={avatarNome}
-                onChange={(e) => setAvatarNome(e.target.value)}
-                className="border-gray-200 bg-white"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-gray-700 text-sm">Briefing <span className="text-gray-400 font-normal">(opcional)</span></Label>
-              <Textarea
-                placeholder="Ex: Mulher entre 28-42 anos, mãe de filhos pequenos, preocupada com saúde e bem-estar, usa Instagram e TikTok..."
-                value={avatarDescricao}
-                onChange={(e) => setAvatarDescricao(e.target.value)}
-                rows={4}
-                className="border-gray-200 bg-white resize-none text-sm"
-              />
-            </div>
-            <div className="flex gap-2 justify-end pt-1">
-              <Button variant="outline" className="border-gray-200 text-gray-600" onClick={() => setAvatarDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSaveAvatar} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
-                Salvar
-              </Button>
-            </div>
-          </div>
+          <GuiaAvatarForm
+            clienteId={clienteId}
+            avatar={editAvatar}
+            onSuccess={handleAvatarSuccess}
+            onCancel={() => setAvatarDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

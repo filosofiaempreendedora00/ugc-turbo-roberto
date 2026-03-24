@@ -27,7 +27,15 @@ export type FormatoRoteiro =
 export interface AvatarICP {
   id: string;
   nome: string;
-  descricao: string;
+  descricao: string; // mantido para retrocompatibilidade
+  // Guia do Avatar
+  idadeRange?: string;
+  genero?: string;
+  situacao?: string;
+  dores?: string[];
+  desejos?: string[];
+  frustracao?: string;
+  objecoes?: string[];
 }
 
 export interface GuiaMarca {
