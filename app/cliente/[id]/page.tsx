@@ -9,11 +9,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuiaMarcaForm } from "@/components/forms/GuiaMarcaForm";
 import { GuiaAvatarForm } from "@/components/forms/GuiaAvatarForm";
+import { GuiaProdutoForm } from "@/components/forms/GuiaProdutoForm";
 import { ProdutoForm } from "@/components/forms/ProdutoForm";
 import { ProdutoCard } from "@/components/cards/ProdutoCard";
-import { Cliente, Produto, AvatarICP } from "@/types";
+import { Cliente, Produto } from "@/types";
 import { getClienteById, getProdutosByCliente, deleteProduto, deleteAvatar } from "@/lib/storage";
-import { ArrowLeft, Package, Plus, BookOpen, Pencil, Trash2, UserCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, Package, Plus, BookOpen, UserCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,9 @@ export default function ClientePage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
   const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") ?? "guia");
+
+  // Produto inline state: null = lista, id = editando guia
+  const [activeProdutoId, setActiveProdutoId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduto, setEditProduto] = useState<Produto | undefined>(undefined);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -73,8 +77,14 @@ export default function ClientePage() {
       loadData();
     } else {
       toast.success(`${produto.nome} adicionado.`);
-      router.push(`/produto/${produto.id}`);
+      loadData();
+      setActiveProdutoId(produto.id);
     }
+  }
+
+  function handleGuiaProdutoSuccess(p: Produto) {
+    setProdutos(prev => prev.map(x => x.id === p.id ? p : x));
+    toast.success("Guia do produto salvo!");
   }
 
   function handleDeleteConfirm() {
@@ -83,6 +93,7 @@ export default function ClientePage() {
     toast.success("Produto removido.");
     loadData();
     setDeleteId(null);
+    setActiveProdutoId(null);
   }
 
   function handleGuiaMarcaSuccess(c: Cliente) {
@@ -111,14 +122,14 @@ export default function ClientePage() {
 
   function handleTabChange(tab: string) {
     if (tab === "produtos") {
+      setActiveProdutoId(null);
+      setActiveTab("produtos");
       if (produtos.length === 1) {
-        router.push(`/produto/${produtos[0].id}`);
-        return;
+        setActiveProdutoId(produtos[0].id);
       } else if (produtos.length === 0) {
-        setActiveTab("produtos");
         setDialogOpen(true);
-        return;
       }
+      return;
     }
     if (tab === "avatares") {
       setActiveTab("avatares");
@@ -131,11 +142,12 @@ export default function ClientePage() {
       }
       return;
     }
+    setActiveProdutoId(null);
     setActiveAvatarId(null);
     setActiveTab(tab);
   }
 
-  // Avatar sendo editado (para exibir nome no header)
+  const produtoAtivo = activeProdutoId ? produtos.find(p => p.id === activeProdutoId) : undefined;
   const avatarAtivo = activeAvatarId && activeAvatarId !== "new"
     ? avatares.find(a => a.id === activeAvatarId)
     : undefined;
@@ -200,58 +212,118 @@ export default function ClientePage() {
 
         {/* ─── 2. Produtos ─────────────────────────────────────────────────────── */}
         <TabsContent value="produtos">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-semibold text-gray-900">Produtos</h2>
-              <p className="text-sm text-gray-500 mt-1">Gerencie os produtos desse cliente e edite os guias.</p>
-            </div>
-            <Button onClick={handleNewProduto} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
-              <Plus size={15} className="mr-2" />
-              Adicionar produto
-            </Button>
-          </div>
-
-          {produtos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-gray-200 bg-white">
-              <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center mb-4">
-                <Package size={20} className="text-violet-400" />
+          {activeProdutoId && produtoAtivo ? (
+            /* ── Guia inline ── */
+            <>
+              <div className="mb-8">
+                <button
+                  onClick={() => setActiveProdutoId(null)}
+                  className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-4 transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  Voltar aos produtos
+                </button>
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{produtoAtivo.nome}</h2>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Preencha o guia para que os roteiros sejam mais precisos e convertam melhor.
+                    </p>
+                    {/* Switcher de produtos — aparece só quando há 2+ */}
+                    {produtos.length > 1 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-4">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-400 font-medium mr-1">
+                          <Package size={11} />
+                          Outros produtos:
+                        </span>
+                        {produtos.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => setActiveProdutoId(p.id)}
+                            className={cn(
+                              "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all",
+                              p.id === activeProdutoId
+                                ? "bg-violet-600 text-white shadow-sm shadow-violet-200"
+                                : "bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-violet-300 hover:text-violet-700"
+                            )}
+                          >
+                            {p.nome}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-600 font-medium">Nenhum produto ainda</p>
-              <p className="text-gray-400 text-sm mt-1 max-w-xs">Adicione um produto para começar a gerar roteiros.</p>
-              <Button onClick={handleNewProduto} variant="outline" className="mt-4 border-gray-200 text-gray-600 hover:bg-gray-50">
-                <Plus size={14} className="mr-2" />
-                Adicionar produto
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {produtos.map((produto) => (
-                <ProdutoCard
-                  key={produto.id}
-                  produto={produto}
-                  clienteNome={cliente.nome}
-                  onEdit={handleEditProduto}
-                  onDelete={(id) => setDeleteId(id)}
-                />
-              ))}
-            </div>
-          )}
 
-          <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
-            <button onClick={() => setActiveTab("guia")} className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors">
-              <ChevronLeft size={14} />
-              Voltar ao Guia
-            </button>
-            <button onClick={() => handleTabChange("avatares")} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200 transition-all">
-              Ir para Avatares
-              <ChevronRight size={14} />
-            </button>
-          </div>
+              <div className="rounded-2xl border border-gray-200 bg-white px-8 py-7 shadow-sm">
+                <GuiaProdutoForm
+                  produto={produtoAtivo}
+                  onSuccess={handleGuiaProdutoSuccess}
+                  onBack={() => {
+                    setActiveProdutoId(null);
+                    handleTabChange("avatares");
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            /* ── Lista de produtos ── */
+            <>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="font-semibold text-gray-900">Produtos</h2>
+                  <p className="text-sm text-gray-500 mt-1">Gerencie os produtos desse cliente e edite os guias.</p>
+                </div>
+                <Button onClick={handleNewProduto} className="bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200">
+                  <Plus size={15} className="mr-2" />
+                  Adicionar produto
+                </Button>
+              </div>
+
+              {produtos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-gray-200 bg-white">
+                  <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center mb-4">
+                    <Package size={20} className="text-violet-400" />
+                  </div>
+                  <p className="text-gray-600 font-medium">Nenhum produto ainda</p>
+                  <p className="text-gray-400 text-sm mt-1 max-w-xs">Adicione um produto para começar a gerar roteiros.</p>
+                  <Button onClick={handleNewProduto} variant="outline" className="mt-4 border-gray-200 text-gray-600 hover:bg-gray-50">
+                    <Plus size={14} className="mr-2" />
+                    Adicionar produto
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {produtos.map((produto) => (
+                    <ProdutoCard
+                      key={produto.id}
+                      produto={produto}
+                      clienteNome={cliente.nome}
+                      onEdit={handleEditProduto}
+                      onDelete={(id) => setDeleteId(id)}
+                      onGuia={(p) => setActiveProdutoId(p.id)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
+                <button onClick={() => setActiveTab("guia")} className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors">
+                  <ChevronLeft size={14} />
+                  Voltar ao Guia
+                </button>
+                <button onClick={() => handleTabChange("avatares")} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200 transition-all">
+                  Ir para Avatares
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         {/* ─── 3. Avatares ─────────────────────────────────────────────────────── */}
         <TabsContent value="avatares">
-
           {activeAvatarId !== null ? (
             /* ── Formulário inline ── */
             <>
@@ -328,10 +400,10 @@ export default function ClientePage() {
                             </div>
                             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => setActiveAvatarId(avatar.id)}>
-                                <Pencil size={13} />
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </Button>
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50" onClick={() => setDeleteAvatarId(avatar.id)}>
-                                <Trash2 size={13} />
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                               </Button>
                             </div>
                           </div>
@@ -370,7 +442,7 @@ export default function ClientePage() {
                             onClick={() => setActiveAvatarId(avatar.id)}
                             className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-violet-300 hover:text-violet-700 transition-all"
                           >
-                            <Pencil size={11} />
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             Editar guia do avatar
                           </button>
                         </div>
@@ -391,7 +463,7 @@ export default function ClientePage() {
         </TabsContent>
       </Tabs>
 
-      {/* ─── Dialog: Produto ───────────────────────────────────────────────────── */}
+      {/* ─── Dialog: Produto (nome/descrição) ──────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white border-gray-200 text-gray-900">
           <DialogHeader>

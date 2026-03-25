@@ -407,7 +407,7 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAva
       <div className="flex items-center justify-between pt-6 mt-7 border-t border-gray-100">
         <p className="text-xs text-gray-400 hidden sm:block">
           {blocksComplete === 4
-            ? "✨ Avatar completo — roteiros com máxima identificação"
+            ? ""
             : `Preencha os ${4 - blocksComplete} blocos restantes para melhores roteiros`}
         </p>
         <div className="flex items-center gap-2 ml-auto">

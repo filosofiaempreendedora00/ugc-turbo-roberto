@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CenaRoteiro, Roteiro, FOCO_LABELS, FORMATO_LABELS } from "@/types";
-import { Check, ClipboardCopy, Loader2, RefreshCw, Wand2, Film } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ClipboardCopy, Loader2, RefreshCw, Wand2 } from "lucide-react";
 
 interface RoteiroTableProps {
   roteiros: Roteiro[];
@@ -16,7 +16,7 @@ interface RoteiroTableProps {
   onGerarCenas: (roteiroId: string) => void;
 }
 
-function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[]): string {
+function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[], includeBriefing = false): string {
   const linhas: string[] = [
     `ROTEIRO: ${roteiro.titulo}`,
     `Foco: ${FOCO_LABELS[roteiro.foco]} | Formato: ${FORMATO_LABELS[roteiro.formato]}`,
@@ -37,7 +37,7 @@ function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[]): string
     cenas.forEach((cena) => {
       linhas.push(`🎬 CENA ${cena.cena}`);
       linhas.push(`Fala: ${cena.fala}`);
-      linhas.push(`Filmagem: ${cena.briefingFilmagem}`);
+      if (includeBriefing) linhas.push(`Filmagem: ${cena.briefingFilmagem}`);
       linhas.push(``);
     });
   }
@@ -49,11 +49,12 @@ function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[]): string
   return linhas.join("\n");
 }
 
-export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cenesGeradas, cenesLoading, onGerarCenas }: RoteiroTableProps) {
+export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cenesGeradas, cenesLoading }: RoteiroTableProps) {
   const [copied, setCopied] = useState<{ [id: string]: boolean }>({});
+  const [showBriefing, setShowBriefing] = useState(false);
 
   async function handleCopy(roteiro: Roteiro) {
-    const texto = formatRoteiroParaTexto(roteiro, cenesGeradas[roteiro.id]);
+    const texto = formatRoteiroParaTexto(roteiro, cenesGeradas[roteiro.id], showBriefing);
     await navigator.clipboard.writeText(texto);
     setCopied((prev) => ({ ...prev, [roteiro.id]: true }));
     setTimeout(() => setCopied((prev) => ({ ...prev, [roteiro.id]: false })), 2000);
@@ -156,19 +157,36 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           </div>
         )}
 
-        {/* Briefing de cenas */}
-        {cenas ? (
+        {/* Cenas */}
+        {loadingCenas ? (
+          <div className="border-t border-gray-100 px-5 py-4 flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 size={14} className="animate-spin text-violet-500" />
+            <span>Gerando cenas...</span>
+          </div>
+        ) : cenas && cenas.length > 0 ? (
           <div className="border-t border-gray-100">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Briefing de Cenas</p>
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cenas</p>
+              <button
+                onClick={() => setShowBriefing(!showBriefing)}
+                className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-500 transition-colors font-medium"
+              >
+                {showBriefing ? (
+                  <><ChevronUp size={12} />Ocultar briefing de filmagem</>
+                ) : (
+                  <><ChevronDown size={12} />Ver briefing de filmagem</>
+                )}
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/50">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Fala / Script</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Briefing de Filmagem</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
+                    {showBriefing && (
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Briefing de Filmagem</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -182,36 +200,18 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
                       <td className="px-4 py-4 align-top">
                         <p className="text-gray-800 leading-relaxed text-sm">{cena.fala}</p>
                       </td>
-                      <td className="px-4 py-4 align-top">
-                        <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
-                      </td>
+                      {showBriefing && (
+                        <td className="px-4 py-4 align-top">
+                          <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        ) : (
-          <div className="border-t border-dashed border-gray-200 px-5 py-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Briefing de Cenas</p>
-              <p className="text-xs text-gray-400 mt-0.5">Gere o roteiro cena por cena com instruções de filmagem</p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 text-xs shrink-0"
-              onClick={() => onGerarCenas(roteiro.id)}
-              disabled={loadingCenas}
-            >
-              {loadingCenas ? (
-                <><Loader2 size={12} className="mr-1.5 animate-spin" />Gerando...</>
-              ) : (
-                <><Film size={12} className="mr-1.5" />Gerar Briefing de Cenas</>
-              )}
-            </Button>
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -152,6 +152,7 @@ function GerarPageInner() {
       setRoteiros([roteiroFull]);
       setCenesGeradas({});
       toast.success("Roteiro gerado!");
+      gerarCenas(roteiroFull, cliente, produto);
     } catch {
       toast.error("Erro de conexão ao gerar roteiro.");
     } finally {
@@ -159,21 +160,16 @@ function GerarPageInner() {
     }
   }
 
-  async function handleGerarCenas(roteiroId: string) {
-    const roteiro = roteiros.find((r) => r.id === roteiroId);
-    if (!roteiro) return;
-    const cliente = getClienteById(estado.clienteId);
-    const produto = getProdutoById(estado.produtoId);
-    if (!cliente || !produto) return;
-
-    setCenesLoading((prev) => ({ ...prev, [roteiroId]: true }));
+  async function gerarCenas(roteiro: Roteiro, clienteObj: ReturnType<typeof getClienteById>, produtoObj: ReturnType<typeof getProdutoById>) {
+    if (!clienteObj || !produtoObj) return;
+    setCenesLoading((prev) => ({ ...prev, [roteiro.id]: true }));
     try {
       const res = await fetch("/api/gerar-cenas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cliente,
-          produto,
+          cliente: clienteObj,
+          produto: produtoObj,
           config: {
             icp: roteiro.icp,
             foco: roteiro.foco,
@@ -186,13 +182,20 @@ function GerarPageInner() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? "Erro ao gerar cenas."); return; }
-      setCenesGeradas((prev) => ({ ...prev, [roteiroId]: data.cenas }));
-      toast.success("Briefing de cenas gerado!");
+      setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: data.cenas }));
     } catch {
       toast.error("Erro de conexão ao gerar cenas.");
     } finally {
-      setCenesLoading((prev) => ({ ...prev, [roteiroId]: false }));
+      setCenesLoading((prev) => ({ ...prev, [roteiro.id]: false }));
     }
+  }
+
+  async function handleGerarCenas(roteiroId: string) {
+    const roteiro = roteiros.find((r) => r.id === roteiroId);
+    if (!roteiro) return;
+    const cliente = getClienteById(estado.clienteId);
+    const produto = getProdutoById(estado.produtoId);
+    await gerarCenas(roteiro, cliente, produto);
   }
 
   const clienteSelecionado = clientes.find((c) => c.id === estado.clienteId);
@@ -377,7 +380,7 @@ function GerarPageInner() {
               <div className="grid grid-cols-2 gap-2">
                 {(["", "frete", "desconto", "compre_leve", "manual"] as OfertaTipo[]).map((tipo) => {
                   const meta = {
-                    "":          { icon: "🚫", label: "Nenhuma", sub: "não recomendado" },
+                    "":          { icon: "—", label: "Nenhuma", sub: "" },
                     frete:       { icon: "🚚", label: "Frete grátis", sub: "" },
                     desconto:    { icon: "🏷️", label: "% de desconto", sub: "" },
                     compre_leve: { icon: "🛍️", label: "Compre e Leve", sub: "" },
@@ -395,7 +398,7 @@ function GerarPageInner() {
                       }}
                       className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border text-left text-xs font-medium transition-all ${
                         ativo && tipo === ""
-                          ? "bg-gray-50 border-gray-300 text-gray-600 shadow-sm"
+                          ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
                           : ativo
                           ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
                           : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"

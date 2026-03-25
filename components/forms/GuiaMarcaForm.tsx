@@ -409,7 +409,7 @@ export function GuiaMarcaForm({
       <div className="flex items-center justify-between pt-6 mt-7 border-t border-gray-100">
         <p className="text-xs text-gray-400 hidden sm:block">
           {blocksComplete === 4
-            ? "✨ Guia completo — roteiros com máxima qualidade"
+            ? ""
             : `Preencha os ${4 - blocksComplete} blocos restantes para melhores roteiros`}
         </p>
 

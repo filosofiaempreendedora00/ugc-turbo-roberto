@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Produto } from "@/types";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,9 +27,10 @@ interface ProdutoCardProps {
   clienteNome: string;
   onEdit: (produto: Produto) => void;
   onDelete: (id: string) => void;
+  onGuia: (produto: Produto) => void;
 }
 
-export function ProdutoCard({ produto, clienteNome, onEdit, onDelete }: ProdutoCardProps) {
+export function ProdutoCard({ produto, clienteNome, onEdit, onDelete, onGuia }: ProdutoCardProps) {
   const score     = guiaScore(produto.guia);
   const guiaOk    = score >= 5;
   const beneficios = parseBeneficios(produto.guia.beneficios).slice(0, 3);
@@ -105,15 +105,16 @@ export function ProdutoCard({ produto, clienteNome, onEdit, onDelete }: ProdutoC
         "flex px-5 py-3 border-t border-gray-100",
         "bg-gray-50/60 group-hover:bg-indigo-50/40 transition-colors duration-200"
       )}>
-        <Link href={`/produto/${produto.id}`} className="flex-1">
-          <button className={cn(
+        <button
+          onClick={() => onGuia(produto)}
+          className={cn(
             "w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium transition-all",
             "bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-indigo-300 hover:text-indigo-700 group-hover:ring-indigo-200"
-          )}>
-            <BookOpen size={12} />
-            Editar guia do produto
-          </button>
-        </Link>
+          )}
+        >
+          <BookOpen size={12} />
+          Editar guia do produto
+        </button>
       </div>
     </div>
   );

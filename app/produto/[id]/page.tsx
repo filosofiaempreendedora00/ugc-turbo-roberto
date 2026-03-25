@@ -42,11 +42,11 @@ export default function ProdutoPage() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="mb-8">
         <Link
-          href={`/cliente/${cliente.id}`}
+          href={`/cliente/${cliente.id}?tab=produtos`}
           className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-4 transition-colors"
         >
           <ArrowLeft size={14} />
-          Voltar para {cliente.nome}
+          Ver todos os produtos
         </Link>
 
         <div className="flex items-start justify-between">

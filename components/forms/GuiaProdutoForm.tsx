@@ -47,9 +47,9 @@ function BlockHeader({ number, label, done }: { number: string; label: string; d
 // ─── Input ────────────────────────────────────────────────────────────────────
 
 function FieldInput({
-  label, value, onChange, placeholder, hint,
+  label, value, onChange, placeholder, hint, rows = 2,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder: string; hint?: string;
+  label: string; value: string; onChange: (v: string) => void; placeholder: string; hint?: string; rows?: number;
 }) {
   return (
     <div>
@@ -58,7 +58,7 @@ function FieldInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        rows={2}
+        rows={rows}
         className={cn(
           "w-full px-3.5 py-2.5 rounded-xl text-sm bg-white resize-none",
           "ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
@@ -332,6 +332,7 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
               onChange={v => { setUso(v); setSaved(false); }}
               placeholder="Ex: Tomar 2 cápsulas por dia pela manhã"
               hint="Quanto mais específico, mais realista fica o roteiro."
+              rows={4}
             />
           </div>
 
@@ -342,7 +343,7 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
       <div className="flex items-center justify-between pt-6 mt-7 border-t border-gray-100">
         <p className="text-xs text-gray-400 hidden sm:block">
           {blocksComplete === 5
-            ? "✨ Guia completo — roteiros com máxima qualidade"
+            ? ""
             : `Preencha os ${5 - blocksComplete} blocos restantes para melhores roteiros`}
         </p>
 
