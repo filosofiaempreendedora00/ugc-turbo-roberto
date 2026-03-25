@@ -154,32 +154,42 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 
 Entregue apenas o JSON. Sem explicações antes ou depois.`;
 
+function parseBeneficios(raw: string): string {
+  if (!raw) return "—";
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0) return arr.map((b: string) => `• ${b}`).join("\n  ");
+  } catch { /* fallback */ }
+  return raw;
+}
+
 function buildUserPrompt(cliente: Cliente, produto: Produto, config: ConfiguracaoGeracao): string {
   return `Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:
 
-## MARCA
-- Nome: ${cliente.nome}
+## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}
-- Público-alvo: ${cliente.guiaMarca.publicoAlvo || "—"}
-- Diferenciais da marca: ${cliente.guiaMarca.diferenciais || "—"}
-- Posicionamento: ${cliente.guiaMarca.posicionamento || "—"}
-- Observações: ${cliente.guiaMarca.observacoes || "—"}
+- Essência / posicionamento: ${cliente.guiaMarca.diferenciais || "—"}
+- Percepção de marca: ${cliente.guiaMarca.posicionamento || "—"}
+- Público-alvo geral: ${cliente.guiaMarca.publicoAlvo || "—"}
+- Regras e restrições (NUNCA violar): ${cliente.guiaMarca.observacoes || "nenhuma"}
 
-## PRODUTO
-- Nome: ${produto.nome}
-- Descrição: ${produto.guia.descricao || "—"}
-- Benefícios: ${produto.guia.beneficios || "—"}
-- Dores que resolve: ${produto.guia.doresQueResolve || "—"}
-- Diferenciais: ${produto.guia.diferenciais || "—"}
-- Oferta padrão: ${produto.guia.oferta || "—"}
-- Observações: ${produto.guia.observacoes || "—"}
+## PRODUTO: ${produto.nome}
+- Como é usado: ${produto.guia.descricao || "—"}
+- Problema que resolve: ${produto.guia.doresQueResolve || "—"}
+- Benefícios:
+  ${parseBeneficios(produto.guia.beneficios)}
+- Diferencial competitivo: ${produto.guia.diferenciais || "—"}
+- Prova social: ${produto.guia.oferta || "—"}
+- Observações do produto: ${produto.guia.observacoes || "nenhuma"}
 
-## CONFIGURAÇÃO
-- Avatar/ICP: ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
-- Foco: ${config.foco}
+## AVATAR/ICP
+${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
+
+## CONFIGURAÇÃO DE GERAÇÃO
+- Foco do roteiro: ${config.foco}
 - Formato: ${config.formato}
-- Oferta específica: ${config.oferta || "—"}
-- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "—"}`;
+- Oferta ativa: ${config.oferta || "nenhuma"}
+- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "nenhuma"}`;
 }
 
 export async function POST(request: NextRequest) {

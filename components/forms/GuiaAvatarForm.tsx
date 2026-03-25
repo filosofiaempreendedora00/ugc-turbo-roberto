@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { addAvatar, updateAvatar } from "@/lib/storage";
 import { AvatarICP, Cliente } from "@/types";
-import { Check, Loader2, Plus, Save, X } from "lucide-react";
+import { Check, ChevronLeft, Loader2, Plus, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -44,11 +44,16 @@ function BlockHeader({ number, label, done }: { number: string; label: string; d
     <div className="flex items-center gap-2.5 mb-4">
       <div className={cn(
         "w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-200",
-        done ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-400"
+        done
+          ? "bg-violet-600 text-white shadow-sm shadow-violet-300/60"
+          : "bg-gray-100 text-gray-400"
       )}>
-        {done ? <Check size={12} strokeWidth={2.5} /> : number}
+        {number}
       </div>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{label}</p>
+      <p className={cn(
+        "text-xs font-semibold uppercase tracking-widest transition-colors duration-200",
+        done ? "text-gray-600" : "text-gray-400"
+      )}>{label}</p>
     </div>
   );
 }
@@ -71,8 +76,6 @@ function ChipList({
   sugestoes: string[];
   max: number;
 }) {
-  const available = sugestoes.filter(s => !items.includes(s));
-
   return (
     <div>
       <div
@@ -120,19 +123,31 @@ function ChipList({
         </span>
       </div>
 
-      {available.length > 0 && items.length < max && (
+      {sugestoes.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {available.map(s => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onAdd(s)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-gray-500 bg-white ring-1 ring-gray-200 hover:ring-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-all"
-            >
-              <Plus size={9} strokeWidth={2.5} />
-              {s}
-            </button>
-          ))}
+          {sugestoes.map(s => {
+            const isSelected = items.includes(s);
+            const isDisabled = isSelected || items.length >= max;
+            return (
+              <button
+                key={s}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => !isSelected && onAdd(s)}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all duration-150",
+                  isSelected
+                    ? "bg-violet-50 text-violet-300 ring-1 ring-violet-100 cursor-default"
+                    : items.length >= max
+                      ? "bg-gray-50 text-gray-300 ring-1 ring-gray-100 cursor-not-allowed"
+                      : "text-gray-500 bg-white ring-1 ring-gray-200 hover:ring-violet-300 hover:text-violet-700 hover:bg-violet-50"
+                )}
+              >
+                {!isSelected && <Plus size={9} strokeWidth={2.5} />}
+                {s}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -145,12 +160,12 @@ interface GuiaAvatarFormProps {
   clienteId: string;
   avatar?: AvatarICP;
   onSuccess: (cliente: Cliente) => void;
-  onCancel: () => void;
+  onBack: () => void;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaAvatarFormProps) {
+export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAvatarFormProps) {
   const [nome, setNome]             = useState(avatar?.nome ?? "");
   const [idadeRange, setIdadeRange] = useState(avatar?.idadeRange ?? "");
   const [genero, setGenero]         = useState(avatar?.genero ?? "");
@@ -159,7 +174,6 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
   const [doreInput, setDoreInput]   = useState("");
   const [desejos, setDesejos]       = useState<string[]>(avatar?.desejos ?? []);
   const [desejoInput, setDesejoInput] = useState("");
-  const [frustracao, setFrustracao] = useState(avatar?.frustracao ?? "");
   const [objecoes, setObjecoes]     = useState<string[]>(avatar?.objecoes ?? []);
   const [objecaoInput, setObjecaoInput] = useState("");
   const [loading, setLoading]       = useState(false);
@@ -173,9 +187,8 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
   const b1Done = !!(idadeRange || genero || situacao.trim());
   const b2Done = dores.length > 0;
   const b3Done = desejos.length > 0;
-  const b4Done = frustracao.trim().length > 0;
-  const b5Done = objecoes.length > 0;
-  const blocksComplete = [b1Done, b2Done, b3Done, b4Done, b5Done].filter(Boolean).length;
+  const b4Done = objecoes.length > 0;
+  const blocksComplete = [b1Done, b2Done, b3Done, b4Done].filter(Boolean).length;
 
   // ── Chip factory ───────────────────────────────────────────────────────────
   function useChips(
@@ -192,7 +205,7 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
     };
     const remove = (item: string) => setList(prev => prev.filter(x => x !== item));
     const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") { e.preventDefault(); add(input); }
+      if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); add(input); }
       else if (e.key === "Backspace" && input === "" && list.length > 0) remove(list[list.length - 1]);
     };
     return { add, remove, onKeyDown };
@@ -215,7 +228,7 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
         situacao: situacao.trim(),
         dores,
         desejos,
-        frustracao: frustracao.trim(),
+        frustracao: "",
         objecoes,
       };
       const updated = avatar
@@ -259,19 +272,19 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
       {/* Progress */}
       <div className="flex items-center gap-3 mb-7 pb-6 border-b border-gray-100">
         <div className="flex gap-1.5">
-          {[b1Done, b2Done, b3Done, b4Done, b5Done].map((done, i) => (
+          {[b1Done, b2Done, b3Done, b4Done].map((done, i) => (
             <div key={i} className={cn("h-1.5 w-7 rounded-full transition-all duration-300", done ? "bg-violet-500" : "bg-gray-200")} />
           ))}
         </div>
         <span className="text-xs text-gray-400 font-medium">
-          {blocksComplete === 5 ? "Guia completo ✓" : `${blocksComplete} de 5 blocos preenchidos`}
+          {blocksComplete === 4 ? "Guia completo ✓" : `${blocksComplete} de 4 blocos preenchidos`}
         </span>
       </div>
 
       {/* 2-column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
 
-        {/* ── LEFT ────────────────────────────────────────────────────────── */}
+        {/* ── LEFT — 01, 02, 03 ────────────────────────────────────────────── */}
         <div className="lg:pr-8 lg:border-r border-gray-100">
 
           {/* 01 — Perfil */}
@@ -337,48 +350,8 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
             </div>
           </div>
 
-          {/* 04 — Frustração */}
-          <div className="py-6 border-t border-gray-100">
-            <BlockHeader number="04" label="Frustração" done={b4Done} />
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">
-              O que ela já tentou e não funcionou?
-            </label>
-            <input
-              type="text"
-              value={frustracao}
-              onChange={e => setFrustracao(e.target.value)}
-              placeholder="Ex: Já tentou dieta, academia e suplementos, mas não manteve"
-              className={cn(
-                "w-full h-10 px-3.5 rounded-xl text-sm bg-white",
-                "ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
-                "placeholder:text-gray-300 text-gray-900 transition-shadow"
-              )}
-            />
-            <p className="text-[11px] text-gray-300 mt-1.5">Campo crítico — gera os hooks mais fortes do roteiro.</p>
-          </div>
-
-          {/* 05 — Objeções */}
-          <div className="pt-6 border-t border-gray-100">
-            <BlockHeader number="05" label="Objeções" done={b5Done} />
-            <label className="block text-xs font-medium text-gray-500 mb-2">
-              O que faz essa pessoa hesitar antes de comprar?
-            </label>
-            <ChipList
-              items={objecoes} onRemove={objecao.remove} onAdd={objecao.add}
-              inputRef={objecaoRef} inputValue={objecaoInput} onInputChange={setObjecaoInput}
-              onKeyDown={objecao.onKeyDown}
-              placeholder="Ex: Não confia em reviews"
-              sugestoes={OBJECOES_SUGESTOES} max={MAX_CHIPS}
-            />
-          </div>
-
-        </div>
-
-        {/* ── RIGHT ───────────────────────────────────────────────────────── */}
-        <div className="lg:pl-8 mt-6 lg:mt-0">
-
           {/* 02 — Dores */}
-          <div className="pb-6">
+          <div className="py-6 border-t border-gray-100">
             <BlockHeader number="02" label="Dores" done={b2Done} />
             <label className="block text-xs font-medium text-gray-500 mb-2">
               O que mais incomoda essa pessoa hoje?
@@ -407,24 +380,49 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
             />
           </div>
 
-        </div>
+        </div>{/* /LEFT */}
+
+        {/* ── RIGHT — 04 ───────────────────────────────────────────────── */}
+        <div className="lg:pl-8 mt-6 lg:mt-0">
+
+          {/* 04 — Objeções */}
+          <div>
+            <BlockHeader number="04" label="Objeções" done={b4Done} />
+            <label className="block text-xs font-medium text-gray-500 mb-2">
+              O que faz essa pessoa hesitar antes de comprar?
+            </label>
+            <ChipList
+              items={objecoes} onRemove={objecao.remove} onAdd={objecao.add}
+              inputRef={objecaoRef} inputValue={objecaoInput} onInputChange={setObjecaoInput}
+              onKeyDown={objecao.onKeyDown}
+              placeholder="Ex: Não confia em reviews"
+              sugestoes={OBJECOES_SUGESTOES} max={MAX_CHIPS}
+            />
+          </div>
+
+        </div>{/* /RIGHT */}
       </div>
 
       {/* ── Buttons ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between pt-6 mt-7 border-t border-gray-100">
         <p className="text-xs text-gray-400 hidden sm:block">
-          {blocksComplete === 5
+          {blocksComplete === 4
             ? "✨ Avatar completo — roteiros com máxima identificação"
-            : `Preencha os ${5 - blocksComplete} blocos restantes para melhores roteiros`}
+            : `Preencha os ${4 - blocksComplete} blocos restantes para melhores roteiros`}
         </p>
         <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onBack}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl text-sm font-medium ring-1 ring-gray-200 bg-white text-gray-600 hover:ring-gray-300 hover:text-gray-800 transition-all disabled:opacity-40"
+            className={cn(
+              "inline-flex items-center gap-1.5 px-4 h-9 rounded-xl text-sm font-medium transition-all",
+              "ring-1 ring-gray-200 bg-white text-gray-600 hover:ring-gray-300 hover:text-gray-800",
+              loading && "opacity-40 cursor-not-allowed"
+            )}
           >
-            Cancelar
+            <ChevronLeft size={13} />
+            Voltar
           </button>
           <button
             type="submit"
@@ -440,7 +438,7 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onCancel }: GuiaA
               : saved
                 ? <Check size={13} strokeWidth={2.5} />
                 : <Save size={13} />}
-            {avatar ? "Salvar alterações" : "Criar avatar"}
+            {saved && !loading ? "Salvo!" : "Salvar"}
           </button>
         </div>
       </div>

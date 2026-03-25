@@ -265,7 +265,16 @@ function GerarPageInner() {
                       dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
                     } else if (val) {
                       const avatar = avatares.find((a) => a.id === val);
-                      if (avatar) dispatch({ type: "SET_CAMPO", campo: "icp", valor: avatar.descricao || avatar.nome });
+                      if (avatar) {
+                        const parts: string[] = [`Nome: ${avatar.nome}`];
+                        if (avatar.idadeRange) parts.push(`Faixa etária: ${avatar.idadeRange}`);
+                        if (avatar.genero) parts.push(`Gênero: ${avatar.genero}`);
+                        if (avatar.situacao) parts.push(`Situação atual: ${avatar.situacao}`);
+                        if (avatar.dores?.length) parts.push(`Dores: ${avatar.dores.join(", ")}`);
+                        if (avatar.desejos?.length) parts.push(`Desejos: ${avatar.desejos.join(", ")}`);
+                        if (avatar.objecoes?.length) parts.push(`Objeções: ${avatar.objecoes.join(", ")}`);
+                        dispatch({ type: "SET_CAMPO", campo: "icp", valor: parts.join("\n") });
+                      }
                     } else {
                       dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
                     }

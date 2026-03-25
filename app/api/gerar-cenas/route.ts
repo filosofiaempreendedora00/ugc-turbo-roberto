@@ -46,35 +46,50 @@ Retorne APENAS um array JSON. Nenhum texto antes ou depois.
 
 Entregue apenas o JSON.`;
 
+function parseBeneficios(raw: string): string {
+  if (!raw) return "—";
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0) return arr.map((b: string) => `• ${b}`).join("\n  ");
+  } catch { /* fallback */ }
+  return raw;
+}
+
 function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria">, roteiro: Roteiro): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
 
   return `Gere as cenas para o seguinte roteiro UGC:
 
-## MARCA
-- Nome: ${cliente.nome}
+## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}
-- Público-alvo: ${cliente.guiaMarca.publicoAlvo || "—"}
+- Essência / posicionamento: ${cliente.guiaMarca.diferenciais || "—"}
+- Percepção de marca: ${cliente.guiaMarca.posicionamento || "—"}
+- Público-alvo geral: ${cliente.guiaMarca.publicoAlvo || "—"}
+- Regras e restrições (NUNCA violar): ${cliente.guiaMarca.observacoes || "nenhuma"}
 
-## PRODUTO
-- Nome: ${produto.nome}
-- Descrição: ${produto.guia.descricao || "—"}
-- Benefícios: ${produto.guia.beneficios || "—"}
-- Dores que resolve: ${produto.guia.doresQueResolve || "—"}
-- Diferenciais: ${produto.guia.diferenciais || "—"}
+## PRODUTO: ${produto.nome}
+- Como é usado: ${produto.guia.descricao || "—"}
+- Problema que resolve: ${produto.guia.doresQueResolve || "—"}
+- Benefícios:
+  ${parseBeneficios(produto.guia.beneficios)}
+- Diferencial competitivo: ${produto.guia.diferenciais || "—"}
+- Prova social: ${produto.guia.oferta || "—"}
+- Observações do produto: ${produto.guia.observacoes || "nenhuma"}
+
+## AVATAR/ICP
+${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
 
 ## ROTEIRO
 - Título: ${roteiro.titulo}
 - Foco: ${config.foco}
 - Formato: face to camera
-- Avatar/ICP: ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
-- Oferta: ${config.oferta || "—"}
-- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "—"}
+- Oferta ativa: ${config.oferta || "nenhuma"}
+- Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "nenhuma"}
 
-## HOOKS GERADOS (use um deles como cena 1)
+## HOOKS GERADOS (escolha o mais forte para a cena 1)
 ${hooksTexto}
 
-Escolha o hook mais forte ou combine elementos dos melhores para construir a cena 1. Complete com mais 3 a 5 cenas seguindo a progressão emocional.`;
+Construa a cena 1 com o hook mais forte. Complete com mais 3 a 5 cenas seguindo a progressão emocional. Honre o tom de voz da marca e as dores/desejos do avatar em cada fala.`;
 }
 
 export async function POST(request: NextRequest) {
