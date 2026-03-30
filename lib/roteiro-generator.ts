@@ -1,4 +1,4 @@
-mport {
+import {
   CenaRoteiro,
         Cliente,
         ConfiguracaoGeracao,
