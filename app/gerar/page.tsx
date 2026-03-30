@@ -13,6 +13,68 @@ import {
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
 import { ChevronDown, Lock, Loader2, Wand2 } from "lucide-react";
+import { SEED_HOOKS, STORAGE_HOOKS } from "@/lib/hooks-seed";
+
+// ─── Banco de Hooks ────────────────────────────────────────────────────────────
+
+const FOCO_PARA_CATEGORIAS: Record<string, string[]> = {
+  dor:          ["Dor", "Identificação"],
+  benefício:    ["Benefício"],
+  transformação:["Transformação"],
+  prova:        ["Prova social"],
+  oferta:       ["Oferta", "Urgência"],
+  objeção:      ["Objeção", "Persuasão"],
+};
+
+const NICHO_KEYWORDS: Record<string, string[]> = {
+  "Beleza & Higiene":    ["beleza", "pele", "cabelo", "unhas", "maquiagem", "skin", "cosmético", "higiene", "glow", "skincare"],
+  "Saúde & Bem-estar":   ["saúde", "suplemento", "vitamina", "imunidade", "treino", "fitness", "creatina", "proteína", "nutrição", "emagrecimento"],
+  "Alimentos & Bebidas": ["alimento", "comida", "bebida", "receita", "food"],
+  "Moda & Estilo":       ["moda", "roupa", "vestido", "estilo", "look", "fashion"],
+};
+
+function selecionarHooksDeReferencia(
+  foco: FocoRoteiro,
+  cliente: Cliente,
+  produto: Produto
+): string[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_HOOKS);
+    // Fall back to built-in seeds if localStorage is empty or not yet seeded
+    const todos: Array<{ estrutura: string; categoria: string; nicho: string }> =
+      saved ? JSON.parse(saved) : SEED_HOOKS;
+
+    const categoriasAlvo = FOCO_PARA_CATEGORIAS[foco] ?? [];
+
+    // Detecta nicho do cliente por keywords nos campos de texto
+    const textoCliente = [
+      cliente.guiaMarca.publicoAlvo,
+      cliente.guiaMarca.posicionamento,
+      cliente.guiaMarca.diferenciais,
+      produto.guia.descricao,
+      produto.guia.doresQueResolve,
+    ].join(" ").toLowerCase();
+
+    const nichoCliente = Object.entries(NICHO_KEYWORDS).find(
+      ([, kws]) => kws.some((k) => textoCliente.includes(k))
+    )?.[0];
+
+    const filtrados = todos.filter((h) => {
+      if (!categoriasAlvo.includes(h.categoria)) return false;
+      if (h.nicho === "Geral") return true;
+      if (nichoCliente && h.nicho === nichoCliente) return true;
+      return false;
+    });
+
+    // Embaralha e retorna no máximo 5 estruturas
+    return filtrados
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5)
+      .map((h) => h.estrutura);
+  } catch {
+    return [];
+  }
+}
 import { toast } from "sonner";
 
 const FOCOS: FocoRoteiro[] = ["dor", "benefício"];
@@ -76,6 +138,9 @@ function GerarPageInner() {
   const [loading, setLoading] = useState(false);
   const [cenesGeradas, setCenesGeradas] = useState<{ [id: string]: CenaRoteiro[] }>({});
   const [cenesLoading, setCenesLoading] = useState<{ [id: string]: boolean }>({});
+  const [doresTags, setDoresTags] = useState<string[]>([]);
+  const [beneficiosTags, setBeneficiosTags] = useState<string[]>([]);
+  const [angulosSelecionados, setAngulosSelecionados] = useState<string[]>([]);
 
   useEffect(() => {
     const todos = getClientes();
@@ -101,12 +166,39 @@ function GerarPageInner() {
     setAvatares(getAvataresByCliente(clienteId));
     setAvatarSelecionadoId("");
     setRoteiros([]);
+    setDoresTags([]);
+    setBeneficiosTags([]);
+    setAngulosSelecionados([]);
+  }
+
+  function parseTags(raw: string): string[] {
+    if (!raw?.trim()) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch { /* fallthrough */ }
+    return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
   }
 
   function handleProdutoChange(produtoId: string) {
     if (!produtoId) return;
     dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: produtoId });
     setRoteiros([]);
+    setAngulosSelecionados([]);
+    const prod = getProdutoById(produtoId);
+    if (prod) {
+      setBeneficiosTags(parseTags(prod.guia.beneficios));
+      setDoresTags(parseTags(prod.guia.doresQueResolve));
+    } else {
+      setBeneficiosTags([]);
+      setDoresTags([]);
+    }
+  }
+
+  function toggleAngulo(tag: string) {
+    setAngulosSelecionados(prev =>
+      prev.includes(tag) ? prev.filter(a => a !== tag) : [...prev, tag]
+    );
   }
 
   async function handleGerar() {
@@ -127,14 +219,17 @@ function GerarPageInner() {
       formato: "face_to_camera",
       oferta: computeOferta(estado),
       mensagemObrigatoria: estado.mensagemObrigatoria,
+      anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
     };
+
+    const hooksDeReferencia = selecionarHooksDeReferencia(estado.foco as FocoRoteiro, cliente, produto);
 
     setLoading(true);
     try {
       const res = await fetch("/api/gerar-roteiros", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente, produto, config }),
+        body: JSON.stringify({ cliente, produto, config, hooksDeReferencia }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? "Erro ao gerar roteiro."); return; }
@@ -176,6 +271,7 @@ function GerarPageInner() {
             formato: roteiro.formato,
             oferta: computeOferta(estado),
             mensagemObrigatoria: roteiro.mensagemObrigatoria,
+            anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
           },
           roteiro,
         }),
@@ -320,7 +416,7 @@ function GerarPageInner() {
                     <button
                       key={foco}
                       type="button"
-                      onClick={() => dispatch({ type: "SET_CAMPO", campo: "foco", valor: foco })}
+                      onClick={() => { dispatch({ type: "SET_CAMPO", campo: "foco", valor: foco }); setAngulosSelecionados([]); }}
                       className={`flex flex-col gap-0.5 px-3 py-3 rounded-lg border transition-all text-left ${
                         estado.foco === foco
                           ? "bg-violet-50 border-violet-300 shadow-sm"
@@ -339,6 +435,49 @@ function GerarPageInner() {
                 })}
               </div>
             </div>
+
+            {/* Ângulo Central */}
+            {estado.foco && estado.produtoId && (() => {
+              const tags = estado.foco === "dor" ? doresTags : beneficiosTags;
+              if (tags.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-gray-700 text-xs">Ângulo central</Label>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Selecione o(s) ângulo(s) que vão nortear o roteiro — hooks e body
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => {
+                      const ativo = angulosSelecionados.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleAngulo(tag)}
+                          className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            ativo
+                              ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+                              : "bg-white border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50"
+                          }`}
+                        >
+                          {ativo && <span className="mr-1 text-[10px]">✓</span>}
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {angulosSelecionados.length > 0 && (
+                    <p className="text-[11px] text-violet-500 font-medium">
+                      {angulosSelecionados.length === 1
+                        ? "1 ângulo selecionado — será a espinha dorsal do roteiro"
+                        : `${angulosSelecionados.length} ângulos selecionados`}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Formato */}
             <div className="space-y-2">
@@ -535,6 +674,7 @@ function GerarPageInner() {
                 }
               />
               <ResumoLinha label="Foco" valor={estado.foco ? FOCO_LABELS[estado.foco as FocoRoteiro] : undefined} />
+              <ResumoLinha label="Ângulo central" valor={angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined} />
               <ResumoLinha label="Formato" valor={estado.formato ? FORMATO_LABELS[estado.formato as FormatoRoteiro] : undefined} />
               <ResumoLinha label="Oferta" valor={computeOferta(estado) || undefined} />
               <ResumoLinha label="Mensagem" valor={estado.mensagemObrigatoria || undefined} />

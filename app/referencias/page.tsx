@@ -4,8 +4,11 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   Search, Star, X, Compass, ChevronRight, SlidersHorizontal,
   Construction, ExternalLink, Plus, Link2, Trash2,
+  FishingHook, Tag, Globe, FileText, Pencil, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SEED_HOOKS, STORAGE_HOOKS, STORAGE_HOOKS_SEEDED } from "@/lib/hooks-seed";
+import type { HookEstrutura } from "@/lib/hooks-seed";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -612,9 +615,291 @@ function NichoDrawer({
   );
 }
 
+// ─── Banco de Hooks ────────────────────────────────────────────────────────────
+
+const CATEGORIAS_HOOK = [
+  "Benefício", "Curiosidade", "Dor", "Identificação", "Informação",
+  "Objeção", "Oferta", "Pergunta", "Persuasão", "Prova social",
+  "Transformação", "Urgência",
+];
+
+function BancoDeHooks() {
+  const [hooks, setHooks] = useState<HookEstrutura[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [searchHook, setSearchHook] = useState("");
+  const [filterCategoria, setFilterCategoria] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const emptyForm = { estrutura: "", categoria: "", nicho: "", exemplo: "" };
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    try {
+      const seeded = localStorage.getItem(STORAGE_HOOKS_SEEDED);
+      const saved = localStorage.getItem(STORAGE_HOOKS);
+      if (!seeded) {
+        localStorage.setItem(STORAGE_HOOKS, JSON.stringify(SEED_HOOKS));
+        localStorage.setItem(STORAGE_HOOKS_SEEDED, "1");
+        setHooks(SEED_HOOKS);
+      } else if (saved) {
+        setHooks(JSON.parse(saved));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const saveHooks = (updated: HookEstrutura[]) => {
+    setHooks(updated);
+    try { localStorage.setItem(STORAGE_HOOKS, JSON.stringify(updated)); } catch { /* ignore */ }
+  };
+
+  const handleSubmit = () => {
+    if (!form.estrutura.trim()) return;
+    if (editingId) {
+      saveHooks(hooks.map((h) => h.id === editingId ? { ...h, ...form } : h));
+      setEditingId(null);
+    } else {
+      const novo: HookEstrutura = {
+        id: `${Date.now()}-${Math.random()}`,
+        ...form,
+        addedAt: new Date().toISOString(),
+      };
+      saveHooks([...hooks, novo]);
+    }
+    setForm(emptyForm);
+    setShowForm(false);
+  };
+
+  const handleEdit = (h: HookEstrutura) => {
+    setForm({ estrutura: h.estrutura, categoria: h.categoria, nicho: h.nicho, exemplo: h.exemplo });
+    setEditingId(h.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    saveHooks(hooks.filter((h) => h.id !== id));
+  };
+
+  const handleCancel = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const filtered = hooks.filter((h) => {
+    const q = searchHook.toLowerCase();
+    const matchQ = !q || h.estrutura.toLowerCase().includes(q) || h.exemplo.toLowerCase().includes(q) || h.nicho.toLowerCase().includes(q);
+    const matchCat = !filterCategoria || h.categoria === filterCategoria;
+    return matchQ && matchCat;
+  });
+
+  return (
+    <div className="space-y-5">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchHook}
+            onChange={(e) => setSearchHook(e.target.value)}
+            placeholder="Buscar estrutura, exemplo, nicho…"
+            className="w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none placeholder:text-gray-400 text-gray-900 transition-shadow"
+          />
+          {searchHook && (
+            <button onClick={() => setSearchHook("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <select
+          value={filterCategoria}
+          onChange={(e) => setFilterCategoria(e.target.value)}
+          className="h-10 px-3 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+        >
+          <option value="">Todas as categorias</option>
+          {CATEGORIAS_HOOK.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <button
+          onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
+          className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center gap-2 shrink-0 transition-colors shadow-sm"
+        >
+          <Plus size={15} />
+          Adicionar hook
+        </button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="bg-white rounded-2xl ring-1 ring-gray-200 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-800">
+            {editingId ? "Editar estrutura" : "Nova estrutura de hook"}
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Estrutura <span className="text-red-400">*</span></label>
+              <input
+                value={form.estrutura}
+                onChange={(e) => setForm((f) => ({ ...f, estrutura: e.target.value }))}
+                placeholder="Ex: Você sabia que [fato surpreendente] sobre [tema]?"
+                className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1.5 block">Categoria</label>
+                <select
+                  value={form.categoria}
+                  onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+                  className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+                >
+                  <option value="">Selecionar…</option>
+                  {CATEGORIAS_HOOK.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1.5 block">Nicho (opcional)</label>
+                <input
+                  value={form.nicho}
+                  onChange={(e) => setForm((f) => ({ ...f, nicho: e.target.value }))}
+                  placeholder="Ex: Skincare, Geral, Fitness…"
+                  className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Exemplo preenchido</label>
+              <input
+                value={form.exemplo}
+                onChange={(e) => setForm((f) => ({ ...f, exemplo: e.target.value }))}
+                placeholder="Ex: Você sabia que 70% das mulheres erram na rotina de skincare?"
+                className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button onClick={handleCancel} className="h-9 px-4 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 ring-1 ring-gray-200 hover:ring-gray-300 bg-white transition-all">
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!form.estrutura.trim()}
+              className="h-9 px-4 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <Check size={14} />
+              {editingId ? "Salvar" : "Adicionar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      {hooks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mb-5 text-3xl select-none">
+            ⚡
+          </div>
+          <h3 className="text-base font-semibold text-gray-700 mb-1.5">Banco de hooks vazio</h3>
+          <p className="text-sm text-gray-400 max-w-xs mb-5">
+            Adicione as estruturas de hooks vencedores para usar como referência nos seus roteiros UGC.
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus size={14} />
+            Adicionar primeiro hook
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-sm text-gray-400">Nenhuma estrutura encontrada para essa busca.</p>
+          <button onClick={() => { setSearchHook(""); setFilterCategoria(""); }} className="mt-3 text-xs text-violet-600 hover:underline font-medium">
+            Limpar filtros
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl ring-1 ring-gray-200 overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <span className="flex items-center gap-1.5"><FileText size={11} />Estrutura / Exemplo</span>
+            <span className="flex items-center gap-1.5 justify-center"><Tag size={11} />Categoria</span>
+            <span className="flex items-center gap-1.5 justify-center"><Globe size={11} />Nicho</span>
+            <span />
+          </div>
+          {/* Rows */}
+          <div className="divide-y divide-gray-50">
+            {filtered.map((h, i) => (
+              <div
+                key={h.id}
+                className={cn(
+                  "grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-4 py-3.5 items-start group hover:bg-gray-50/70 transition-colors",
+                  i % 2 === 0 ? "" : "bg-gray-50/30"
+                )}
+              >
+                {/* Estrutura + exemplo */}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 leading-snug">{h.estrutura}</p>
+                  {h.exemplo && (
+                    <p className="text-xs text-gray-400 mt-1 italic leading-relaxed">&ldquo;{h.exemplo}&rdquo;</p>
+                  )}
+                </div>
+                {/* Categoria */}
+                <div className="flex items-start pt-0.5">
+                  {h.categoria ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-50 text-violet-700 ring-1 ring-violet-100 whitespace-nowrap">
+                      {h.categoria}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
+                </div>
+                {/* Nicho */}
+                <div className="flex items-start pt-0.5">
+                  {h.nicho ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 ring-1 ring-gray-200 whitespace-nowrap">
+                      {h.nicho}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-300">Geral</span>
+                  )}
+                </div>
+                {/* Actions */}
+                <div className="flex items-center gap-1 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleEdit(h)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                    title="Editar"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(h.id)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    title="Remover"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Footer count */}
+          <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+            <p className="text-xs text-gray-400">
+              {filtered.length} estrutura{filtered.length !== 1 ? "s" : ""}
+              {(searchHook || filterCategoria) ? ` (filtrado de ${hooks.length})` : " no banco"}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ReferenciasPage() {
+  const [activeTab, setActiveTab] = useState<"nichos" | "hooks">("nichos");
   const [search, setSearch] = useState("");
   const [selectedMacros, setSelectedMacros] = useState<string[]>([]);
   const [selectedSubnichos, setSelectedSubnichos] = useState<string[]>([]);
@@ -782,10 +1067,42 @@ export default function ReferenciasPage() {
           Central de Referências
         </h1>
         <p className="text-sm text-gray-400 max-w-lg">
-          Explore nichos de mercado, descubra subnichos e encontre o direcionamento criativo
-          certo para seus vídeos UGC.
+          Nichos de mercado, estruturas de hooks vencedores e referências para seus vídeos UGC.
         </p>
       </div>
+
+      {/* ── Tabs ──────────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 mb-7 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab("nichos")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+            activeTab === "nichos"
+              ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <Compass size={14} />
+          Nichos
+        </button>
+        <button
+          onClick={() => setActiveTab("hooks")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+            activeTab === "hooks"
+              ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <FishingHook size={14} />
+          Banco de Hooks
+        </button>
+      </div>
+
+      {activeTab === "hooks" && <BancoDeHooks />}
+
+      {activeTab === "nichos" && (
+      <div>
 
       {/* ── Search & Filter Bar ────────────────────────────────────────────── */}
       <div className="mb-5 space-y-3">
@@ -978,6 +1295,8 @@ export default function ReferenciasPage() {
         onAddMarca={addMarca}
         onRemoveMarca={removeMarca}
       />
+      </div>
+      )}
     </div>
   );
 }

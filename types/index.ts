@@ -102,6 +102,7 @@ export interface ConfiguracaoGeracao {
   formato: FormatoRoteiro;
   oferta: string;
   mensagemObrigatoria: string;
+  anguloCentral?: string; // ângulo(s) específico(s) selecionados das tags do produto
 }
 
 export const FORMATO_LABELS: Record<FormatoRoteiro, string> = {
