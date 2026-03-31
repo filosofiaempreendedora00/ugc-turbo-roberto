@@ -72,17 +72,14 @@ Análise de cada exemplo:
 
 **TÉCNICA DO PRONOME VAZIO — a forma mais eficiente de criar curiosidade:**
 
-Palavras como "isso", "esse", "essa", "assim", "aqui" apontam pra algo específico que ainda não foi revelado. O viewer precisa continuar pra descobrir o que é.
+Palavras como "isso", "esse", "essa", "aqui" apontam pra algo específico que ainda não foi revelado. O viewer precisa continuar pra descobrir o que é.
 
 - ❌ "Ninguém me avisou o que cortar carboidrato faz com o músculo." → descreve o problema, não aponta pra nada
 - ✅ "Ninguém me avisou sobre isso que acontece com o músculo quando você corta tudo." → "isso" cria a lacuna
 - ❌ "Eu descobri como ganhar massa sem cortar pão." → statement de benefício, fechado
-- ✅ "Eu não sabia que dava pra fazer assim até descobrir esse método." → "assim" e "esse" retêm a informação
 - ✅ "Esse erro aqui me custou 6 meses de treino." → "esse erro aqui" aponta pra algo específico não revelado
 - ✅ "Foi isso que a minha personal falou que mudou tudo." → "isso" é a lacuna
-- ✅ "Ninguém faz assim e esse é exatamente o problema." → dupla retenção
-
-Use pronomes demonstrativos pra criar um "dedo apontando pra algo invisível". O viewer precisa ver o vídeo pra descobrir o que é esse/essa/isso/assim.
+Use pronomes demonstrativos pra criar um "dedo apontando pra algo invisível". O viewer precisa ver o vídeo pra descobrir o que é esse/essa/isso.
 
 **FORMATO OBRIGATÓRIO: 1 frase. Ponto final. Sem exceção.**
 **PROIBIDO: travessão (—) em qualquer hook.**
@@ -102,7 +99,7 @@ Não comece do início da história. Comece no pico — no momento de virada, no
 4. **Subversão de crença:** "O problema nunca foi [crença comum]. Demorei anos pra entender isso." → entender o quê?
 5. **Informação retida:** "Foi isso que [pessoa/autoridade] me falou e eu não queria acreditar." → o quê ela falou?
 
-Regra: toda estrutura deve ter pelo menos 1 pronome vazio (esse, essa, isso, assim, aqui) apontando pra algo não revelado.
+Regra: toda estrutura deve ter pelo menos 1 pronome vazio (esse, essa, isso, aqui) apontando pra algo não revelado.
 
 ---
 
@@ -117,11 +114,13 @@ Regra: toda estrutura deve ter pelo menos 1 pronome vazio (esse, essa, isso, ass
 ---
 
 **VALIDAÇÃO INTERNA OBRIGATÓRIA — antes de aceitar cada hook:**
-1. É 1 frase? Se não → corte.
+1. É 1 frase completa? Se for fragmento ou tiver mais de 1 frase → reescreva.
 2. Tem travessão? Se sim → reescreva.
 3. O hook RETÉM a informação mais importante ou a entrega? Se entrega → reescreva.
 4. O viewer sabe exatamente o que vai acontecer depois? Se sim → o loop está fechado. Reescreva.
 5. Parece genérico ou de anúncio? Se sim → reescreva.
+6. Soa fluido se falado em voz alta, como numa conversa? Se soar truncado ou robótico → reescreva.
+7. Tem elemento de curiosidade (loop aberto, pronome vazio, informação retida)? Se não → reescreva.
 
 Um hook só passa se criar uma pergunta específica na cabeça do viewer que ele não consegue responder sem ver o vídeo.
 
@@ -251,8 +250,9 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 ### Regras dos 5 hooks
 - Cada hook = estrutura e angulação emocional completamente diferente
 - Variar entre: subversão de lógica, confissão, revelação suspensa, contradição, resultado inesperado
-- **MÁXIMO 2 FRASES. Nunca 3. Nunca.**
-- Máximo 12 palavras por frase — quanto mais curto, mais forte
+- **1 FRASE. Ponto final. Sem exceção. Sem fragmentos isolados.**
+- Máximo 15 palavras — a frase deve soar completa, fluida e conversacional, não truncada
+- **100% dos hooks devem ter elemento de curiosidade** (loop aberto, pronome vazio ou informação retida) — sem exceção
 - Nenhum pode começar com a mesma palavra que outro
 - Pelo menos 1 obrigatoriamente deve subverter uma lógica ou crença comum
 - Aplicar a validação interna em CADA um antes de aceitar
@@ -269,7 +269,7 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 "Hidratante caro não entra na pele. Aprendi isso depois de R$600 jogados fora."
 
 **Confissão com lacuna (fitness):**
-"Fiz tudo certo por 6 meses. Perdi zero. Até entender o que eu tava errando."
+"Fiz tudo certo por 6 meses sem entender o que eu tava errando."
 
 **Revelação suspensa (suplemento):**
 "Tem uma coisa que ninguém fala sobre metabolismo depois dos 40."
@@ -280,8 +280,8 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 **Resultado inesperado (lifestyle):**
 "Eu tava prestes a desistir. Aí minha amiga me mandou uma coisa."
 
-**Desenvolvimento (objeção):**
-"Eu sei que parece mais do mesmo. Eu também achei. Comprei com ceticismo total. Me surpreendi."
+**Resultado inesperado (objeção):**
+"Comprei achando que era mais do mesmo e o resultado me surpreendeu de um jeito que eu não esperava."
 
 **CTA com oferta:**
 "Frete grátis só hoje. Link na bio, dois cliques e chega em casa. Não deixa passar."
@@ -296,6 +296,8 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 ## TESTE ANTI-IA (OBRIGATÓRIO antes de entregar)
 
 Valide cada hook:
+- É 1 frase completa e fluida? Se for fragmento ou se soar truncado → reescreva.
+- Tem elemento de curiosidade? Se não abrir nenhum loop → reescreva.
 - Isso parece algo que alguém falaria em voz alta, naturalmente?
 - Parece improvisado — ou parece roteirizado demais?
 - Tem alguma palavra ou frase que denuncia IA? (conector formal, linguagem corporativa, travessão, estrutura perfeita demais)

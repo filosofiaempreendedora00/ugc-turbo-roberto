@@ -14,6 +14,7 @@ import {
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
 import { ChevronDown, Lock, Loader2, Wand2 } from "lucide-react";
 import { SEED_HOOKS, STORAGE_HOOKS } from "@/lib/hooks-seed";
+import { SEED_CTAS, STORAGE_CTAS } from "@/lib/ctas-seed";
 
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
@@ -75,6 +76,36 @@ function selecionarHooksDeReferencia(
     return [];
   }
 }
+// ─── Banco de CTAs ─────────────────────────────────────────────────────────────
+
+const FOCO_PARA_TIPOS_CTA: Record<string, string[]> = {
+  dor:           ["Identificação", "Experiência Pessoal"],
+  "benefício":   ["Natural / Despretensioso", "Recomendação (Indireta)"],
+  "transformação":["Experiência Pessoal", "Natural / Despretensioso"],
+  prova:         ["Natural / Despretensioso", "Recomendação (Indireta)"],
+  oferta:        ["Urgência Leve", "Direto (Mas Ainda Humano)"],
+  "objeção":     ["Identificação", "Curiosidade"],
+};
+
+function selecionarCtasDeReferencia(foco: FocoRoteiro): string[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_CTAS);
+    const todos: Array<{ texto: string; tipo: string }> =
+      saved ? JSON.parse(saved) : SEED_CTAS;
+
+    const tiposAlvo = FOCO_PARA_TIPOS_CTA[foco] ?? [];
+
+    const filtrados = todos.filter((c) => tiposAlvo.includes(c.tipo));
+
+    return filtrados
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5)
+      .map((c) => c.texto);
+  } catch {
+    return [];
+  }
+}
+
 import { toast } from "sonner";
 
 const FOCOS: FocoRoteiro[] = ["dor", "benefício"];
@@ -274,6 +305,7 @@ function GerarPageInner() {
             anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
           },
           roteiro,
+          ctasDeReferencia: selecionarCtasDeReferencia(roteiro.foco),
         }),
       });
       const data = await res.json();

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CenaRoteiro, Roteiro, FOCO_LABELS, FORMATO_LABELS } from "@/types";
-import { Check, ChevronDown, ChevronUp, ClipboardCopy, Loader2, RefreshCw, Wand2 } from "lucide-react";
+import {
+  Check, ChevronDown, ChevronUp, ClipboardCopy, Loader2,
+  RefreshCw, Wand2, Zap, Film, Megaphone, Copy,
+} from "lucide-react";
 
 interface RoteiroTableProps {
   roteiros: Roteiro[];
@@ -20,7 +23,6 @@ function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[], include
   const linhas: string[] = [
     `ROTEIRO: ${roteiro.titulo}`,
     `Foco: ${FOCO_LABELS[roteiro.foco]} | Formato: ${FORMATO_LABELS[roteiro.formato]}`,
-    `ICP: ${roteiro.icp || "—"}`,
     ``,
     `HOOKS:`,
     ``,
@@ -31,36 +33,183 @@ function formatRoteiroParaTexto(roteiro: Roteiro, cenas?: CenaRoteiro[], include
   });
 
   if (cenas && cenas.length > 0) {
-    linhas.push(``);
-    linhas.push(`CENAS:`);
-    linhas.push(``);
-    cenas.forEach((cena) => {
-      linhas.push(`🎬 CENA ${cena.cena}`);
-      linhas.push(`Fala: ${cena.fala}`);
-      if (includeBriefing) linhas.push(`Filmagem: ${cena.briefingFilmagem}`);
+    const bodyCenas = cenas.slice(1, -1);
+    const ctaCena = cenas[cenas.length - 1];
+
+    if (bodyCenas.length > 0) {
       linhas.push(``);
-    });
+      linhas.push(`BODY:`);
+      linhas.push(``);
+      bodyCenas.forEach((cena) => {
+        linhas.push(`🎬 CENA ${cena.cena}`);
+        linhas.push(`Fala: ${cena.fala}`);
+        if (includeBriefing) linhas.push(`Filmagem: ${cena.briefingFilmagem}`);
+        linhas.push(``);
+      });
+    }
+
+    if (ctaCena) {
+      linhas.push(`CTA:`);
+      linhas.push(`Fala: ${ctaCena.fala}`);
+      if (includeBriefing) linhas.push(`Filmagem: ${ctaCena.briefingFilmagem}`);
+    }
   }
 
   if (roteiro.mensagemObrigatoria) {
+    linhas.push(``);
     linhas.push(`📌 Mensagem obrigatória: ${roteiro.mensagemObrigatoria}`);
   }
 
   return linhas.join("\n");
 }
 
+// ── Section header component ───────────────────────────────────────────────────
+
+function SectionHeader({
+  label,
+  descricao,
+  icon,
+  color,
+}: {
+  label: string;
+  descricao: string;
+  icon: React.ReactNode;
+  color: "violet" | "slate" | "emerald";
+}) {
+  const colors = {
+    violet: {
+      badge: "bg-violet-100 text-violet-700 border-violet-200",
+      icon: "bg-violet-50 text-violet-500 border-violet-100",
+    },
+    slate: {
+      badge: "bg-slate-100 text-slate-600 border-slate-200",
+      icon: "bg-slate-50 text-slate-500 border-slate-100",
+    },
+    emerald: {
+      badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      icon: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    },
+  }[color];
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 bg-gray-50/60">
+      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${colors.icon}`}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${colors.badge}`}>
+          {label}
+        </span>
+        <p className="text-[11px] text-gray-400 mt-0.5 leading-none">{descricao}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Connector between sections ─────────────────────────────────────────────────
+
+function SectionConnector() {
+  return (
+    <div className="flex items-center justify-center py-1">
+      <div className="w-px h-5 bg-gray-200" />
+    </div>
+  );
+}
+
+// ── Editable textarea base styles ──────────────────────────────────────────────
+
+const editableBase =
+  "w-full text-gray-800 text-sm leading-relaxed resize-none overflow-hidden rounded-lg px-2.5 py-2 border border-dashed border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-gray-50 transition-colors focus:outline-none focus:border-transparent focus:ring-2";
+
+const focusColors = {
+  violet: "focus:ring-violet-200 focus:bg-violet-50/50",
+  slate: "focus:ring-slate-200 focus:bg-slate-50/50",
+  emerald: "focus:ring-emerald-200 focus:bg-emerald-50/50",
+};
+
 export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cenesGeradas, cenesLoading }: RoteiroTableProps) {
   const [copied, setCopied] = useState<{ [id: string]: boolean }>({});
+  const [copiedHook, setCopiedHook] = useState<number | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
+  const [editedHooks, setEditedHooks] = useState<string[]>([]);
+  const [editedCenas, setEditedCenas] = useState<Record<number, string>>({});
+  const [editedCtaFala, setEditedCtaFala] = useState<string>("");
 
-  async function handleCopy(roteiro: Roteiro) {
-    const texto = formatRoteiroParaTexto(roteiro, cenesGeradas[roteiro.id], showBriefing);
-    await navigator.clipboard.writeText(texto);
-    setCopied((prev) => ({ ...prev, [roteiro.id]: true }));
-    setTimeout(() => setCopied((prev) => ({ ...prev, [roteiro.id]: false })), 2000);
+  const hookRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const cenaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  const ctaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const roteiro = roteiros[0] ?? null;
+  const cenas = roteiro ? cenesGeradas[roteiro.id] : undefined;
+  const loadingCenas = roteiro ? cenesLoading[roteiro.id] : false;
+  const bodyCenas = cenas && cenas.length > 1 ? cenas.slice(1, -1) : [];
+  const ctaCena = cenas && cenas.length > 0 ? cenas[cenas.length - 1] : null;
+
+  function autoResize(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
   }
 
-  if (roteiros.length === 0) {
+  // Sync hooks when new roteiro arrives
+  useEffect(() => {
+    if (roteiros.length > 0) {
+      setEditedHooks([...roteiros[0].hooks]);
+    }
+  }, [roteiros[0]?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync cenas when they're generated
+  useEffect(() => {
+    if (cenas && cenas.length > 0) {
+      const bodyMap: Record<number, string> = {};
+      cenas.slice(1, -1).forEach((c) => { bodyMap[c.cena] = c.fala; });
+      setEditedCenas(bodyMap);
+      setEditedCtaFala(cenas[cenas.length - 1].fala);
+    }
+  }, [cenas]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-resize all textareas after state updates
+  useEffect(() => {
+    hookRefs.current.forEach((el) => { if (el) autoResize(el); });
+  }, [editedHooks]);
+
+  useEffect(() => {
+    Object.values(cenaRefs.current).forEach((el) => { if (el) autoResize(el); });
+  }, [editedCenas]);
+
+  useEffect(() => {
+    if (ctaRef.current) autoResize(ctaRef.current);
+  }, [editedCtaFala]);
+
+  function handleHookChange(index: number, value: string) {
+    setEditedHooks((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  async function handleCopyHook(index: number) {
+    await navigator.clipboard.writeText(editedHooks[index] ?? "");
+    setCopiedHook(index);
+    setTimeout(() => setCopiedHook(null), 1500);
+  }
+
+  async function handleCopy(r: Roteiro) {
+    const roteiroComEdits = { ...r, hooks: editedHooks.length > 0 ? editedHooks : r.hooks };
+    const cenasComEdits = cenas
+      ? cenas.map((c) =>
+          c === ctaCena
+            ? { ...c, fala: editedCtaFala || c.fala }
+            : { ...c, fala: editedCenas[c.cena] ?? c.fala }
+        )
+      : undefined;
+    const texto = formatRoteiroParaTexto(roteiroComEdits, cenasComEdits, showBriefing);
+    await navigator.clipboard.writeText(texto);
+    setCopied((prev) => ({ ...prev, [r.id]: true }));
+    setTimeout(() => setCopied((prev) => ({ ...prev, [r.id]: false })), 2000);
+  }
+
+  if (!roteiro) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
@@ -71,10 +220,6 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
       </div>
     );
   }
-
-  const roteiro = roteiros[0];
-  const cenas = cenesGeradas[roteiro.id];
-  const loadingCenas = cenesLoading[roteiro.id];
 
   return (
     <div className="space-y-4">
@@ -103,115 +248,198 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           </Button>
         </div>
 
-        <Button
-          size="sm"
-          className="bg-violet-600 hover:bg-violet-500 text-white text-xs"
-          onClick={() => handleCopy(roteiro)}
-        >
-          {copied[roteiro.id] ? (
-            <><Check size={12} className="mr-1.5" />Copiado!</>
-          ) : (
-            <><ClipboardCopy size={12} className="mr-1.5" />Copiar roteiro</>
+        <div className="flex items-center gap-2">
+          {cenas && cenas.length > 0 && (
+            <button
+              onClick={() => setShowBriefing(!showBriefing)}
+              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-violet-600 transition-colors font-medium"
+            >
+              {showBriefing ? (
+                <><ChevronUp size={12} />Ocultar briefing</>
+              ) : (
+                <><ChevronDown size={12} />Ver briefing</>
+              )}
+            </button>
           )}
-        </Button>
+          <Button
+            size="sm"
+            className="bg-violet-600 hover:bg-violet-500 text-white text-xs"
+            onClick={() => handleCopy(roteiro)}
+          >
+            {copied[roteiro.id] ? (
+              <><Check size={12} className="mr-1.5" />Copiado!</>
+            ) : (
+              <><ClipboardCopy size={12} className="mr-1.5" />Copiar roteiro</>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Roteiro */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-        {/* Meta */}
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-3 flex-wrap">
-          <h3 className="text-sm font-medium text-gray-900">{roteiro.titulo}</h3>
-          <Badge variant="outline" className="text-violet-600 border-violet-200 bg-violet-50 text-xs">
-            {FOCO_LABELS[roteiro.foco]}
-          </Badge>
-          <Badge variant="outline" className="text-sky-600 border-sky-200 bg-sky-50 text-xs">
-            {FORMATO_LABELS[roteiro.formato]}
-          </Badge>
-          {roteiro.icp && (
-            <span className="text-xs text-gray-400">ICP: {roteiro.icp}</span>
-          )}
-        </div>
+      {/* Meta */}
+      <div className="flex items-center gap-2 flex-wrap px-1">
+        <h3 className="text-sm font-semibold text-gray-700">{roteiro.titulo}</h3>
+        <Badge variant="outline" className="text-violet-600 border-violet-200 bg-violet-50 text-xs">
+          {FOCO_LABELS[roteiro.foco]}
+        </Badge>
+        <Badge variant="outline" className="text-sky-600 border-sky-200 bg-sky-50 text-xs">
+          {FORMATO_LABELS[roteiro.formato]}
+        </Badge>
+      </div>
 
-        {/* Hooks */}
-        <div className="p-5 space-y-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-            5 Hooks — escolha o melhor para o seu roteiro
-          </p>
-          {roteiro.hooks.map((hook, i) => (
-            <div key={i} className="flex gap-3 items-start">
-              <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+      {/* ── HOOK ──────────────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <SectionHeader
+          label="Hook"
+          descricao="Escolha 1 das 5 opções para abrir o vídeo"
+          icon={<Zap size={15} />}
+          color="violet"
+        />
+        <div className="p-5 space-y-2.5">
+          {(editedHooks.length > 0 ? editedHooks : roteiro.hooks).map((hook, i) => (
+            <div key={i} className="flex gap-3 items-start group/hook">
+              <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 mt-2">
                 <span className="text-[11px] font-bold text-violet-600">{i + 1}</span>
               </div>
-              <p className="text-gray-800 text-sm leading-relaxed">{hook}</p>
+              <div className="flex-1 min-w-0">
+                <textarea
+                  ref={(el) => { hookRefs.current[i] = el; }}
+                  value={hook}
+                  onChange={(e) => {
+                    handleHookChange(i, e.target.value);
+                    autoResize(e.target);
+                  }}
+                  onFocus={(e) => autoResize(e.target)}
+                  rows={1}
+                  className={`${editableBase} ${focusColors.violet}`}
+                />
+              </div>
+              <button
+                onClick={() => handleCopyHook(i)}
+                className="p-1.5 rounded-lg text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-all opacity-0 group-hover/hook:opacity-100 shrink-0 mt-1.5"
+                title="Copiar hook"
+              >
+                {copiedHook === i ? <Check size={13} className="text-violet-500" /> : <Copy size={13} />}
+              </button>
             </div>
           ))}
         </div>
 
-        {/* Mensagem obrigatória */}
         {roteiro.mensagemObrigatoria && (
-          <div className="px-4 py-3 border-t border-amber-100 bg-amber-50">
-            <p className="text-xs text-amber-700 flex items-center gap-2">
-              <span className="font-semibold">📌 Mensagem obrigatória:</span>
+          <div className="mx-5 mb-4 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-100">
+            <p className="text-xs text-amber-700 flex items-start gap-2">
+              <span className="font-semibold shrink-0">📌 Mensagem obrigatória:</span>
               <span>{roteiro.mensagemObrigatoria}</span>
             </p>
           </div>
         )}
+      </div>
 
-        {/* Cenas */}
+      <SectionConnector />
+
+      {/* ── BODY ──────────────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <SectionHeader
+          label="Body"
+          descricao="O desenvolvimento do vídeo — contexto, solução e prova"
+          icon={<Film size={15} />}
+          color="slate"
+        />
+
         {loadingCenas ? (
-          <div className="border-t border-gray-100 px-5 py-4 flex items-center gap-2 text-sm text-gray-400">
+          <div className="px-5 py-6 flex items-center gap-2 text-sm text-gray-400">
             <Loader2 size={14} className="animate-spin text-violet-500" />
             <span>Gerando cenas...</span>
           </div>
-        ) : cenas && cenas.length > 0 ? (
-          <div className="border-t border-gray-100">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cenas</p>
-              <button
-                onClick={() => setShowBriefing(!showBriefing)}
-                className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-500 transition-colors font-medium"
-              >
-                {showBriefing ? (
-                  <><ChevronUp size={12} />Ocultar briefing de filmagem</>
-                ) : (
-                  <><ChevronDown size={12} />Ver briefing de filmagem</>
-                )}
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
+        ) : bodyCenas.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
+                  {showBriefing && (
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Briefing de Filmagem</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {bodyCenas.map((cena) => (
+                  <tr key={cena.cena} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-4 align-top">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+                        <span className="text-xs font-bold text-slate-500">{cena.cena}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <textarea
+                        ref={(el) => { cenaRefs.current[cena.cena] = el; }}
+                        value={editedCenas[cena.cena] ?? cena.fala}
+                        onChange={(e) => {
+                          setEditedCenas((prev) => ({ ...prev, [cena.cena]: e.target.value }));
+                          autoResize(e.target);
+                        }}
+                        onFocus={(e) => autoResize(e.target)}
+                        rows={1}
+                        className={`${editableBase} ${focusColors.slate}`}
+                      />
+                    </td>
                     {showBriefing && (
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Briefing de Filmagem</th>
+                      <td className="px-4 py-4 align-top">
+                        <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
+                      </td>
                     )}
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {cenas.map((cena) => (
-                    <tr key={cena.cena} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4 align-top">
-                        <div className="w-8 h-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center">
-                          <span className="text-xs font-bold text-violet-600">{cena.cena}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <p className="text-gray-800 leading-relaxed text-sm">{cena.fala}</p>
-                      </td>
-                      {showBriefing && (
-                        <td className="px-4 py-4 align-top">
-                          <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : null}
+        ) : (
+          <div className="px-5 py-6 text-sm text-gray-400 italic">
+            Cenas serão exibidas após a geração.
+          </div>
+        )}
+      </div>
+
+      <SectionConnector />
+
+      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <SectionHeader
+          label="CTA"
+          descricao="Como fechar o vídeo e direcionar o viewer"
+          icon={<Megaphone size={15} />}
+          color="emerald"
+        />
+
+        {loadingCenas ? (
+          <div className="px-5 py-6 flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 size={14} className="animate-spin text-violet-500" />
+            <span>Gerando CTA...</span>
+          </div>
+        ) : ctaCena ? (
+          <div className="p-5 space-y-2">
+            <textarea
+              ref={ctaRef}
+              value={editedCtaFala || ctaCena.fala}
+              onChange={(e) => {
+                setEditedCtaFala(e.target.value);
+                autoResize(e.target);
+              }}
+              onFocus={(e) => autoResize(e.target)}
+              rows={1}
+              className={`${editableBase} ${focusColors.emerald}`}
+            />
+            {showBriefing && ctaCena.briefingFilmagem && (
+              <p className="text-gray-400 text-xs leading-relaxed pt-2 border-t border-gray-100">
+                {ctaCena.briefingFilmagem}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="px-5 py-6 text-sm text-gray-400 italic">
+            CTA será exibido após a geração.
+          </div>
+        )}
       </div>
     </div>
   );

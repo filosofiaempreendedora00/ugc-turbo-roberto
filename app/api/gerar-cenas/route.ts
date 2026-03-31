@@ -152,7 +152,7 @@ function parseBeneficios(raw: string): string {
   return raw;
 }
 
-function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro): string {
+function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[]): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
 
   const anguloSection = config.anguloCentral
@@ -198,17 +198,21 @@ ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
 
 ## HOOKS GERADOS (escolha o mais forte para a cena 1)
 ${hooksTexto}
+${ctasDeReferencia && ctasDeReferencia.length > 0
+  ? `\n## ESTRUTURAS DE CTA DE REFERÊNCIA\nEsses são os templates do banco de CTAs vencedores selecionados para este foco. Use-os como molduras estruturais para a última cena — adapte ao contexto específico desta marca, produto e à narrativa construída nas cenas anteriores. Não copie literalmente; personalize para que o CTA seja a conclusão natural do roteiro:\n${ctasDeReferencia.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
+  : ""}
 
 Construa a cena 1 com o hook mais forte. Complete com mais 3 a 5 cenas seguindo a progressão emocional. Honre o tom de voz da marca e as dores/desejos do avatar em cada fala.`;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { cliente, produto, config, roteiro } = await request.json() as {
+    const { cliente, produto, config, roteiro, ctasDeReferencia } = await request.json() as {
       cliente: Cliente;
       produto: Produto;
       config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">;
       roteiro: Roteiro;
+      ctasDeReferencia?: string[];
     };
 
     if (!cliente || !produto || !config || !roteiro) {
@@ -219,7 +223,7 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 4000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro) }],
+      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia) }],
     });
 
     const message = await stream.finalMessage();

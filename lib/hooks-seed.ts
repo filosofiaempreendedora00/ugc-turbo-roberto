@@ -19,7 +19,7 @@ function s(id: number, estrutura: string, categoria: string, nicho: string, exem
 }
 
 export const SEED_HOOKS: HookEstrutura[] = [
-  // ── Ana Lello — Beleza & Higiene ─────────────────────────────────────────
+  // ── Hooks Gerais — Beleza & Higiene ──────────────────────────────────────
   s(1,  "Coisas que eu fiz pra ter um glow up e que realmente fizeram diferença pra mim", "Transformação", "Beleza & Higiene"),
   s(2,  "Esse é o produto que eu vou comprar pro resto da minha vida", "Prova social", "Beleza & Higiene"),
   s(3,  "O segredo pra ter [resultado] não é o que você pensa, e eu vou te provar", "Curiosidade", "Beleza & Higiene", "O segredo pra ter unhas fortes não é a sua base fortalecedora e eu vou te provar"),
@@ -32,16 +32,16 @@ export const SEED_HOOKS: HookEstrutura[] = [
   s(10, "Esse aqui é o meu hábito de [nicho] INEGOCIÁVEL", "Prova social", "Beleza & Higiene"),
   s(11, "A base de toda a minha rotina de [nicho] começa com isso aqui", "Benefício", "Beleza & Higiene"),
   s(12, "Esse é o melhor investimento que eu fiz na minha [área]", "Benefício", "Beleza & Higiene"),
-  // ── Ana Lello — Geral ────────────────────────────────────────────────────
+  // ── Hooks Gerais — Geral ─────────────────────────────────────────────────
   s(13, "Esse é o produto que tá sempre no meu carrinho de compras", "Prova social", "Geral"),
   s(14, "Vim influenciar vocês a comprarem o que realmente funciona", "Prova social", "Geral"),
   s(15, "Esse era o sinal que você precisava para finalmente comprar um [produto]", "Urgência", "Geral"),
   s(16, "Essa sou eu depois de descobrir COMO ACABAR COM [problema]", "Transformação", "Geral"),
   s(17, "Isso é o que eu faria se eu quisesse acabar com [problema]", "Dor", "Geral"),
-  s(18, "Foi assim que eu descobri COMO acabar com [problema]", "Transformação", "Geral"),
+  s(18, "Foi isso que eu descobri pra acabar com [problema]", "Transformação", "Geral"),
   s(19, "Se eu pudesse te dar um único conselho sobre [tema], seria este", "Benefício", "Geral"),
   s(20, "Isso aqui vai te fazer economizar TEMPO e dinheiro", "Benefício", "Geral"),
-  // ── Ana Lello — Saúde & Bem-estar ────────────────────────────────────────
+  // ── Hooks Gerais — Saúde & Bem-estar ─────────────────────────────────────
   s(21, "Você nunca mais vai ser refém de [problema] com isso aqui", "Dor", "Saúde & Bem-estar"),
   s(22, "Eu não sei mais o que é [problema] depois de ter conhecido isso aqui", "Transformação", "Saúde & Bem-estar"),
   s(23, "Foi depois de incluir esse hábito nas minhas manhãs que a minha [área] mudou de verdade", "Transformação", "Saúde & Bem-estar"),
@@ -57,10 +57,10 @@ export const SEED_HOOKS: HookEstrutura[] = [
   s(33, "Eu vou te mostrar como eu [ação] em menos de 30 segundos", "Benefício", "Saúde & Bem-estar"),
   s(34, "Nem todo [produto] é igual e hoje eu vou te mostrar o por quê", "Curiosidade", "Saúde & Bem-estar"),
   s(35, "Foi com ISSO AQUI que os resultados do meu [área] mudaram", "Transformação", "Saúde & Bem-estar"),
-  s(36, "Se a sua rotina de [área] está assim, a gente precisa conversar", "Identificação", "Saúde & Bem-estar"),
+  s(36, "Se a sua rotina de [área] está travada, a gente precisa conversar", "Identificação", "Saúde & Bem-estar"),
   s(37, "Se você cuida da [área] e ela nunca melhora, eu vou te mostrar uma coisa que vai te ajudar", "Dor", "Saúde & Bem-estar"),
   s(38, "Esse é o produto que eu indico de olhos fechados para quem [contexto]", "Prova social", "Saúde & Bem-estar"),
-  // ── UGC Ad Hook Ideas — Geral ────────────────────────────────────────────
+  // ── Hooks Gerais — UGC Ad Ideas ──────────────────────────────────────────
   s(39, "Preciso da sua opinião sobre isso", "Curiosidade", "Geral"),
   s(40, "Opinião impopular: [afirmação]", "Curiosidade", "Geral"),
   s(41, "Não cometa esse erro: [erro]", "Objeção", "Geral"),

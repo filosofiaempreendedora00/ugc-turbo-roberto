@@ -4,11 +4,13 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   Search, Star, X, Compass, ChevronRight, SlidersHorizontal,
   Construction, ExternalLink, Plus, Link2, Trash2,
-  FishingHook, Tag, Globe, FileText, Pencil, Check,
+  FishingHook, Tag, Globe, FileText, Pencil, Check, MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SEED_HOOKS, STORAGE_HOOKS, STORAGE_HOOKS_SEEDED } from "@/lib/hooks-seed";
 import type { HookEstrutura } from "@/lib/hooks-seed";
+import { SEED_CTAS, STORAGE_CTAS, STORAGE_CTAS_SEEDED, TIPOS_CTA } from "@/lib/ctas-seed";
+import type { CtaEstrutura } from "@/lib/ctas-seed";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -234,15 +236,11 @@ const VISIBLE_TAGS = 4;
 
 function NichoCard({
   nicho,
-  isFavorite,
-  onToggleFavorite,
   onOpen,
   searchTerm,
   marcasCount,
 }: {
   nicho: Nicho;
-  isFavorite: boolean;
-  onToggleFavorite: (id: string) => void;
   onOpen: (nicho: Nicho) => void;
   searchTerm: string;
   marcasCount: number;
@@ -274,20 +272,6 @@ function NichoCard({
       )}
       onClick={() => onOpen(nicho)}
     >
-      {/* Favorite button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggleFavorite(nicho.id); }}
-        className={cn(
-          "absolute top-4 right-4 p-1.5 rounded-lg transition-all duration-150 z-10",
-          isFavorite
-            ? "text-amber-400 hover:text-amber-500 bg-amber-50"
-            : "text-gray-300 hover:text-amber-400 hover:bg-amber-50 opacity-0 group-hover:opacity-100"
-        )}
-        aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-      >
-        <Star size={15} className={cn("transition-all", isFavorite && "fill-amber-400")} />
-      </button>
-
       {/* Emoji */}
       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4 select-none shrink-0", nicho.emojiBg)}>
         {nicho.emoji}
@@ -372,8 +356,6 @@ function MarcaChip({ marca, onRemove }: { marca: MarcaRef; onRemove: (id: string
 function NichoDrawer({
   nicho,
   isOpen,
-  isFavorite,
-  onToggleFavorite,
   onClose,
   marcas,
   onAddMarca,
@@ -381,8 +363,6 @@ function NichoDrawer({
 }: {
   nicho: Nicho | null;
   isOpen: boolean;
-  isFavorite: boolean;
-  onToggleFavorite: (id: string) => void;
   onClose: () => void;
   marcas: MarcaRef[];
   onAddMarca: (marca: MarcaRef) => void;
@@ -498,13 +478,6 @@ function NichoDrawer({
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => onToggleFavorite(nicho.id)}
-                  className={cn("p-2 rounded-xl transition-all", isFavorite ? "text-amber-500 bg-amber-50" : "text-gray-400 hover:text-amber-500 hover:bg-amber-50")}
-                  aria-label={isFavorite ? "Remover favorito" : "Favoritar"}
-                >
-                  <Star size={16} className={cn(isFavorite && "fill-amber-400")} />
-                </button>
                 <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all" aria-label="Fechar">
                   <X size={16} />
                 </button>
@@ -615,6 +588,307 @@ function NichoDrawer({
   );
 }
 
+// ─── Banco de CTAs ─────────────────────────────────────────────────────────────
+
+function BancoDeCTAs() {
+  const [ctas, setCtas] = useState<CtaEstrutura[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [searchCta, setSearchCta] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const emptyForm = { texto: "", tipo: "", exemplo: "" };
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    try {
+      const seeded = localStorage.getItem(STORAGE_CTAS_SEEDED);
+      const saved = localStorage.getItem(STORAGE_CTAS);
+      if (!seeded) {
+        localStorage.setItem(STORAGE_CTAS, JSON.stringify(SEED_CTAS));
+        localStorage.setItem(STORAGE_CTAS_SEEDED, "1");
+        setCtas(SEED_CTAS);
+      } else if (saved) {
+        setCtas(JSON.parse(saved));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const saveCtas = (updated: CtaEstrutura[]) => {
+    setCtas(updated);
+    try { localStorage.setItem(STORAGE_CTAS, JSON.stringify(updated)); } catch { /* ignore */ }
+  };
+
+  const handleSubmit = () => {
+    if (!form.texto.trim()) return;
+    if (editingId) {
+      saveCtas(ctas.map((c) => c.id === editingId ? { ...c, ...form } : c));
+      setEditingId(null);
+    } else {
+      const novo: CtaEstrutura = {
+        id: `${Date.now()}-${Math.random()}`,
+        ...form,
+        addedAt: new Date().toISOString(),
+      };
+      saveCtas([...ctas, novo]);
+    }
+    setForm(emptyForm);
+    setShowForm(false);
+  };
+
+  const handleEdit = (c: CtaEstrutura) => {
+    setForm({ texto: c.texto, tipo: c.tipo, exemplo: c.exemplo });
+    setEditingId(c.id);
+    setShowForm(false);
+  };
+
+  const handleDelete = (id: string) => {
+    saveCtas(ctas.filter((c) => c.id !== id));
+  };
+
+  const handleCancel = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const filtered = ctas.filter((c) => {
+    const q = searchCta.toLowerCase();
+    const matchQ = !q || c.texto.toLowerCase().includes(q) || c.exemplo.toLowerCase().includes(q);
+    const matchTipo = !filterTipo || c.tipo === filterTipo;
+    return matchQ && matchTipo;
+  });
+
+  return (
+    <div className="space-y-5">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchCta}
+            onChange={(e) => setSearchCta(e.target.value)}
+            placeholder="Buscar texto ou exemplo…"
+            className="w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none placeholder:text-gray-400 text-gray-900 transition-shadow"
+          />
+          {searchCta && (
+            <button onClick={() => setSearchCta("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <select
+          value={filterTipo}
+          onChange={(e) => setFilterTipo(e.target.value)}
+          className="h-10 px-3 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+        >
+          <option value="">Todos os tipos</option>
+          {TIPOS_CTA.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <button
+          onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
+          className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center gap-2 shrink-0 transition-colors shadow-sm"
+        >
+          <Plus size={15} />
+          Adicionar CTA
+        </button>
+      </div>
+
+      {/* Form — adicionar novo */}
+      {showForm && (
+        <div className="bg-white rounded-2xl ring-1 ring-gray-200 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-800">Nova estrutura de CTA</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Texto <span className="text-red-400">*</span></label>
+              <input
+                autoFocus
+                value={form.texto}
+                onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))}
+                placeholder="Ex: Corre no link da bio antes de acabar o estoque!"
+                className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tipo</label>
+              <select
+                value={form.tipo}
+                onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
+                className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+              >
+                <option value="">Selecionar…</option>
+                {TIPOS_CTA.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Exemplo preenchido</label>
+              <input
+                value={form.exemplo}
+                onChange={(e) => setForm((f) => ({ ...f, exemplo: e.target.value }))}
+                placeholder="Ex: Corre no link da bio, o desconto vai até meia-noite!"
+                className="w-full h-10 px-3.5 rounded-xl text-sm bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button onClick={handleCancel} className="h-9 px-4 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 ring-1 ring-gray-200 hover:ring-gray-300 bg-white transition-all">
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!form.texto.trim()}
+              className="h-9 px-4 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <Check size={14} />
+              Adicionar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      {ctas.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mb-5 text-3xl select-none">
+            💬
+          </div>
+          <h3 className="text-base font-semibold text-gray-700 mb-1.5">Banco de CTAs vazio</h3>
+          <p className="text-sm text-gray-400 max-w-xs mb-5">
+            Adicione os textos de CTA que mais convertem para usar como referência nos seus roteiros UGC.
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus size={14} />
+            Adicionar primeiro CTA
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-sm text-gray-400">Nenhum CTA encontrado para essa busca.</p>
+          <button onClick={() => { setSearchCta(""); setFilterTipo(""); }} className="mt-3 text-xs text-violet-600 hover:underline font-medium">
+            Limpar filtros
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl ring-1 ring-gray-200 overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <span className="flex items-center gap-1.5"><FileText size={11} />Texto / Exemplo</span>
+            <span className="flex items-center gap-1.5 justify-center"><Tag size={11} />Tipo</span>
+            <span />
+          </div>
+          {/* Rows */}
+          <div className="divide-y divide-gray-50">
+            {filtered.map((c, i) => (
+              editingId === c.id ? (
+                <div key={c.id} className="px-4 py-4 bg-violet-50/40 space-y-3">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Texto <span className="text-red-400">*</span></label>
+                      <input
+                        autoFocus
+                        value={form.texto}
+                        onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))}
+                        className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-violet-300 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tipo</label>
+                      <select
+                        value={form.tipo}
+                        onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
+                        className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+                      >
+                        <option value="">Selecionar…</option>
+                        {TIPOS_CTA.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Exemplo preenchido</label>
+                      <input
+                        value={form.exemplo}
+                        onChange={(e) => setForm((f) => ({ ...f, exemplo: e.target.value }))}
+                        placeholder="Ex: Corre no link da bio, o desconto vai até meia-noite!"
+                        className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={handleCancel} className="h-9 px-4 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 ring-1 ring-gray-200 hover:ring-gray-300 bg-white transition-all">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!form.texto.trim()}
+                      className="h-9 px-4 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      <Check size={14} />
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-3.5 items-start group hover:bg-gray-50/70 transition-colors",
+                    i % 2 === 0 ? "" : "bg-gray-50/30"
+                  )}
+                >
+                  {/* Texto + exemplo */}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 leading-snug">{c.texto}</p>
+                    {c.exemplo && (
+                      <p className="text-xs text-gray-400 mt-1 italic leading-relaxed">&ldquo;{c.exemplo}&rdquo;</p>
+                    )}
+                  </div>
+                  {/* Tipo */}
+                  <div className="flex items-start pt-0.5">
+                    {c.tipo ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-50 text-violet-700 ring-1 ring-violet-100 whitespace-nowrap">
+                        {c.tipo}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleEdit(c)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                      title="Editar"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                      title="Remover"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
+          {/* Footer count */}
+          <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+            <p className="text-xs text-gray-400">
+              {filtered.length} CTA{filtered.length !== 1 ? "s" : ""}
+              {(searchCta || filterTipo) ? ` (filtrado de ${ctas.length})` : " no banco"}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
 const CATEGORIAS_HOOK = [
@@ -672,7 +946,7 @@ function BancoDeHooks() {
   const handleEdit = (h: HookEstrutura) => {
     setForm({ estrutura: h.estrutura, categoria: h.categoria, nicho: h.nicho, exemplo: h.exemplo });
     setEditingId(h.id);
-    setShowForm(true);
+    setShowForm(false);
   };
 
   const handleDelete = (id: string) => {
@@ -829,6 +1103,65 @@ function BancoDeHooks() {
           {/* Rows */}
           <div className="divide-y divide-gray-50">
             {filtered.map((h, i) => (
+              editingId === h.id ? (
+                <div key={h.id} className="px-4 py-4 bg-violet-50/40 space-y-3">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Estrutura <span className="text-red-400">*</span></label>
+                      <input
+                        autoFocus
+                        value={form.estrutura}
+                        onChange={(e) => setForm((f) => ({ ...f, estrutura: e.target.value }))}
+                        className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-violet-300 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">Categoria</label>
+                        <select
+                          value={form.categoria}
+                          onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+                          className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+                        >
+                          <option value="">Selecionar…</option>
+                          {CATEGORIAS_HOOK.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">Nicho (opcional)</label>
+                        <input
+                          value={form.nicho}
+                          onChange={(e) => setForm((f) => ({ ...f, nicho: e.target.value }))}
+                          placeholder="Ex: Skincare, Geral, Fitness…"
+                          className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Exemplo preenchido</label>
+                      <input
+                        value={form.exemplo}
+                        onChange={(e) => setForm((f) => ({ ...f, exemplo: e.target.value }))}
+                        placeholder="Ex: Você sabia que 70% das mulheres erram na rotina de skincare?"
+                        className="w-full h-10 px-3.5 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-900 transition-shadow"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={handleCancel} className="h-9 px-4 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 ring-1 ring-gray-200 hover:ring-gray-300 bg-white transition-all">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!form.estrutura.trim()}
+                      className="h-9 px-4 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      <Check size={14} />
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div
                 key={h.id}
                 className={cn(
@@ -881,6 +1214,7 @@ function BancoDeHooks() {
                   </button>
                 </div>
               </div>
+              )
             ))}
           </div>
           {/* Footer count */}
@@ -899,24 +1233,16 @@ function BancoDeHooks() {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ReferenciasPage() {
-  const [activeTab, setActiveTab] = useState<"nichos" | "hooks">("nichos");
+  const [activeTab, setActiveTab] = useState<"nichos" | "hooks" | "ctas">("nichos");
   const [search, setSearch] = useState("");
-  const [selectedMacros, setSelectedMacros] = useState<string[]>([]);
-  const [selectedSubnichos, setSelectedSubnichos] = useState<string[]>([]);
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [marcas, setMarcas] = useState<MarcaRef[]>([]);
   const [activeNicho, setActiveNicho] = useState<Nicho | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showSubFilter, setShowSubFilter] = useState(false);
 
   // ── Persistence ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     try {
-      const savedFavs = localStorage.getItem(STORAGE_FAVORITES);
-      if (savedFavs) setFavorites(JSON.parse(savedFavs));
-
       const seeded = localStorage.getItem(STORAGE_SEEDED);
       const savedMarcas = localStorage.getItem(STORAGE_MARCAS);
 
@@ -954,66 +1280,17 @@ export default function ReferenciasPage() {
     });
   }, []);
 
-  const toggleFavorite = useCallback((id: string) => {
-    setFavorites((prev) => {
-      const updated = prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id];
-      localStorage.setItem(STORAGE_FAVORITES, JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
   // ── Filter logic ───────────────────────────────────────────────────────────
-
-  const toggleMacro = (id: string) => {
-    setSelectedMacros((prev) =>
-      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
-    );
-    setSelectedSubnichos([]);
-  };
-
-  const toggleSubnicho = (sub: string) => {
-    setSelectedSubnichos((prev) =>
-      prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]
-    );
-  };
-
-  const clearAll = () => {
-    setSearch("");
-    setSelectedMacros([]);
-    setSelectedSubnichos([]);
-    setOnlyFavorites(false);
-  };
-
-  const hasActiveFilters =
-    search.trim() !== "" ||
-    selectedMacros.length > 0 ||
-    selectedSubnichos.length > 0 ||
-    onlyFavorites;
-
-  const availableSubnichos = useMemo(() => {
-    const base =
-      selectedMacros.length > 0
-        ? NICHOS_DATA.filter((n) => selectedMacros.includes(n.id))
-        : NICHOS_DATA;
-    return Array.from(new Set(base.flatMap((n) => n.subnichos)));
-  }, [selectedMacros]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
+    if (!q) return NICHOS_DATA;
     return NICHOS_DATA.filter((nicho) => {
-      if (onlyFavorites && !favorites.includes(nicho.id)) return false;
-      if (selectedMacros.length > 0 && !selectedMacros.includes(nicho.id)) return false;
-      if (selectedSubnichos.length > 0) {
-        if (!nicho.subnichos.some((s) => selectedSubnichos.includes(s))) return false;
-      }
-      if (q) {
-        const matchMacro = nicho.nome.toLowerCase().includes(q);
-        const matchSub = nicho.subnichos.some((s) => s.toLowerCase().includes(q));
-        if (!matchMacro && !matchSub) return false;
-      }
-      return true;
+      const matchMacro = nicho.nome.toLowerCase().includes(q);
+      const matchSub = nicho.subnichos.some((s) => s.toLowerCase().includes(q));
+      return matchMacro || matchSub;
     });
-  }, [search, selectedMacros, selectedSubnichos, onlyFavorites, favorites]);
+  }, [search]);
 
   // ── Drawer handlers ────────────────────────────────────────────────────────
 
@@ -1097,157 +1374,50 @@ export default function ReferenciasPage() {
           <FishingHook size={14} />
           Banco de Hooks
         </button>
+        <button
+          onClick={() => setActiveTab("ctas")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+            activeTab === "ctas"
+              ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+              : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <MessageSquare size={14} />
+          Banco de CTAs
+        </button>
       </div>
 
       {activeTab === "hooks" && <BancoDeHooks />}
+      {activeTab === "ctas" && <BancoDeCTAs />}
 
       {activeTab === "nichos" && (
       <div>
 
-      {/* ── Search & Filter Bar ────────────────────────────────────────────── */}
-      <div className="mb-5 space-y-3">
-        {/* Search row */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar nicho ou subnicho..."
-              className={cn(
-                "w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white",
-                "ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
-                "placeholder:text-gray-400 text-gray-900 transition-shadow"
-              )}
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Favorites toggle */}
-          <button
-            onClick={() => setOnlyFavorites((v) => !v)}
+      {/* ── Search Bar ────────────────────────────────────────────────────── */}
+      <div className="mb-5">
+        <div className="relative">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar nicho ou subnicho..."
             className={cn(
-              "h-10 px-3.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0 ring-1 transition-all duration-150",
-              onlyFavorites
-                ? "bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100"
-                : "bg-white text-gray-500 ring-gray-200 hover:ring-gray-300 hover:text-gray-700"
+              "w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white",
+              "ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
+              "placeholder:text-gray-400 text-gray-900 transition-shadow"
             )}
-          >
-            <Star size={14} className={cn(onlyFavorites && "fill-amber-500 text-amber-500")} />
-            <span className="hidden sm:inline">Favoritos</span>
-            {favorites.length > 0 && (
-              <span className={cn("text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center", onlyFavorites ? "bg-amber-200 text-amber-800" : "bg-gray-100 text-gray-500")}>
-                {favorites.length}
-              </span>
-            )}
-          </button>
-
-          {/* Sub-filter toggle */}
-          <button
-            onClick={() => setShowSubFilter((v) => !v)}
-            className={cn(
-              "h-10 px-3.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0 ring-1 transition-all duration-150",
-              showSubFilter || selectedSubnichos.length > 0
-                ? "bg-violet-50 text-violet-700 ring-violet-200"
-                : "bg-white text-gray-500 ring-gray-200 hover:ring-gray-300 hover:text-gray-700"
-            )}
-          >
-            <SlidersHorizontal size={14} />
-            <span className="hidden sm:inline">Filtros</span>
-            {selectedSubnichos.length > 0 && (
-              <span className="text-xs font-bold w-4 h-4 rounded-full bg-violet-200 text-violet-800 flex items-center justify-center">
-                {selectedSubnichos.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Macro filters */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-          <button
-            onClick={() => { setSelectedMacros([]); setSelectedSubnichos([]); }}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ring-1 transition-all duration-150",
-              selectedMacros.length === 0
-                ? "bg-gray-900 text-white ring-gray-900"
-                : "bg-white text-gray-500 ring-gray-200 hover:ring-gray-300"
-            )}
-          >
-            Todos
-            <span className="opacity-60 text-[10px] font-bold">{NICHOS_DATA.length}</span>
-          </button>
-          {NICHOS_DATA.map((nicho) => (
+          />
+          {search && (
             <button
-              key={nicho.id}
-              onClick={() => toggleMacro(nicho.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ring-1 transition-all duration-150",
-                selectedMacros.includes(nicho.id)
-                  ? "bg-violet-600 text-white ring-violet-600 shadow-sm"
-                  : "bg-white text-gray-600 ring-gray-200 hover:ring-gray-300"
-              )}
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <span className="text-sm leading-none">{nicho.emoji}</span>
-              {nicho.nome}
+              <X size={14} />
             </button>
-          ))}
+          )}
         </div>
-
-        {/* Subnicho filters */}
-        {showSubFilter && (
-          <div className="bg-gray-50/80 rounded-xl p-3 ring-1 ring-gray-100">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">
-              Filtrar por subnicho
-              {selectedMacros.length > 0 && (
-                <span className="ml-1.5 normal-case text-gray-300">
-                  — {selectedMacros.length === 1 ? "1 nicho selecionado" : `${selectedMacros.length} nichos`}
-                </span>
-              )}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {availableSubnichos.map((sub) => (
-                <button
-                  key={sub}
-                  onClick={() => toggleSubnicho(sub)}
-                  className={cn(
-                    "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ring-1 transition-all duration-150",
-                    selectedSubnichos.includes(sub)
-                      ? "bg-violet-600 text-white ring-violet-600"
-                      : "bg-white text-gray-600 ring-gray-200 hover:ring-gray-300"
-                  )}
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Active filters summary */}
-        {hasActiveFilters && (
-          <div className="flex items-center justify-between py-1">
-            <p className="text-xs text-gray-400">
-              {filtered.length === 0
-                ? "Nenhum resultado"
-                : `${filtered.length} nicho${filtered.length !== 1 ? "s" : ""} encontrado${filtered.length !== 1 ? "s" : ""}`}
-            </p>
-            <button
-              onClick={clearAll}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors font-medium"
-            >
-              <X size={12} />
-              Limpar filtros
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Grid ──────────────────────────────────────────────────────────── */}
@@ -1257,8 +1427,6 @@ export default function ReferenciasPage() {
             <NichoCard
               key={nicho.id}
               nicho={nicho}
-              isFavorite={favorites.includes(nicho.id)}
-              onToggleFavorite={toggleFavorite}
               onOpen={openDrawer}
               searchTerm={search}
               marcasCount={marcasCountByNicho[nicho.id] || 0}
@@ -1275,11 +1443,11 @@ export default function ReferenciasPage() {
             Tente ajustar sua busca ou remover alguns filtros para ver mais resultados.
           </p>
           <button
-            onClick={clearAll}
+            onClick={() => setSearch("")}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white ring-1 ring-gray-200 text-sm font-medium text-gray-600 hover:ring-gray-300 hover:text-gray-800 transition-all"
           >
             <X size={14} />
-            Limpar filtros
+            Limpar busca
           </button>
         </div>
       )}
@@ -1288,8 +1456,6 @@ export default function ReferenciasPage() {
       <NichoDrawer
         nicho={activeNicho}
         isOpen={drawerOpen}
-        isFavorite={activeNicho ? favorites.includes(activeNicho.id) : false}
-        onToggleFavorite={toggleFavorite}
         onClose={closeDrawer}
         marcas={marcas}
         onAddMarca={addMarca}
