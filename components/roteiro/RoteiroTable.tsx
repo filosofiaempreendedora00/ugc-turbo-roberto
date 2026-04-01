@@ -6,14 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { CenaRoteiro, Roteiro, FOCO_LABELS, FORMATO_LABELS } from "@/types";
 import {
   Check, ChevronDown, ChevronUp, ClipboardCopy, Loader2,
-  RefreshCw, Wand2, Zap, Film, Megaphone, Copy,
+  RefreshCw, Wand2, Zap, Film, Megaphone, Copy, Lock, Unlock,
 } from "lucide-react";
 
 interface RoteiroTableProps {
   roteiros: Roteiro[];
-  onRegenerate: () => void;
+  onRegenerateHooks: (locked: { index: number; text: string }[]) => void;
+  onRegenerateCenas: (lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro) => void;
   onGerarNovo: () => void;
-  loading?: boolean;
+  hooksLoading?: boolean;
   cenesGeradas: { [id: string]: CenaRoteiro[] };
   cenesLoading: { [id: string]: boolean };
   onGerarCenas: (roteiroId: string) => void;
@@ -70,11 +71,19 @@ function SectionHeader({
   descricao,
   icon,
   color,
+  lockState,
+  onLockToggle,
+  onRegenerate,
+  loading,
 }: {
   label: string;
   descricao: string;
   icon: React.ReactNode;
   color: "violet" | "slate" | "emerald";
+  lockState?: "none" | "some" | "all";
+  onLockToggle?: () => void;
+  onRegenerate?: () => void;
+  loading?: boolean;
 }) {
   const colors = {
     violet: {
@@ -102,6 +111,33 @@ function SectionHeader({
         </span>
         <p className="text-[11px] text-gray-400 mt-0.5 leading-none">{descricao}</p>
       </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {onLockToggle && lockState !== undefined && (
+          <button
+            onClick={onLockToggle}
+            className={`p-1.5 rounded-lg transition-all ${
+              lockState === "all"
+                ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                : lockState === "some"
+                ? "text-amber-300 bg-amber-50/60 hover:bg-amber-100"
+                : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+            }`}
+            title={lockState === "all" ? "Desbloquear todos" : "Travar todos"}
+          >
+            {lockState === "all" ? <Lock size={13} /> : <Unlock size={13} />}
+          </button>
+        )}
+        {onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            disabled={loading || lockState === "all"}
+            className="p-1.5 rounded-lg text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Regenerar esta seção"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -127,13 +163,29 @@ const focusColors = {
   emerald: "focus:ring-emerald-200 focus:bg-emerald-50/50",
 };
 
-export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cenesGeradas, cenesLoading }: RoteiroTableProps) {
+const lockedStyle = "border-amber-200 bg-amber-50/50 hover:border-amber-300 hover:bg-amber-50/70";
+
+export function RoteiroTable({
+  roteiros,
+  onRegenerateHooks,
+  onRegenerateCenas,
+  onGerarNovo,
+  hooksLoading,
+  cenesGeradas,
+  cenesLoading,
+  onGerarCenas,
+}: RoteiroTableProps) {
   const [copied, setCopied] = useState<{ [id: string]: boolean }>({});
   const [copiedHook, setCopiedHook] = useState<number | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
   const [editedHooks, setEditedHooks] = useState<string[]>([]);
   const [editedCenas, setEditedCenas] = useState<Record<number, string>>({});
   const [editedCtaFala, setEditedCtaFala] = useState<string>("");
+
+  // Lock states
+  const [lockedHooks, setLockedHooks] = useState<Set<number>>(new Set());
+  const [lockedCenas, setLockedCenas] = useState<Set<number>>(new Set());
+  const [ctaLocked, setCtaLocked] = useState(false);
 
   const hookRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const cenaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
@@ -150,12 +202,19 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
     el.style.height = `${el.scrollHeight}px`;
   }
 
-  // Sync hooks when new roteiro arrives
+  // Reset locks when a new roteiro is generated (ID changes)
+  useEffect(() => {
+    setLockedHooks(new Set());
+    setLockedCenas(new Set());
+    setCtaLocked(false);
+  }, [roteiros[0]?.id]); // eslint-disable-line
+
+  // Sync hooks when new roteiro arrives or regen parcial occurs (object reference changes)
   useEffect(() => {
     if (roteiros.length > 0) {
       setEditedHooks([...roteiros[0].hooks]);
     }
-  }, [roteiros[0]?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roteiros[0]]); // eslint-disable-line — depende da referência do objeto
 
   // Sync cenas when they're generated
   useEffect(() => {
@@ -165,7 +224,7 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
       setEditedCenas(bodyMap);
       setEditedCtaFala(cenas[cenas.length - 1].fala);
     }
-  }, [cenas]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cenas]); // eslint-disable-line
 
   // Auto-resize all textareas after state updates
   useEffect(() => {
@@ -179,6 +238,81 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
   useEffect(() => {
     if (ctaRef.current) autoResize(ctaRef.current);
   }, [editedCtaFala]);
+
+  // ── Lock helpers ──────────────────────────────────────────────────────────────
+
+  function toggleHookLock(i: number) {
+    setLockedHooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
+  function toggleAllHooksLock() {
+    const total = editedHooks.length || roteiro?.hooks.length || 0;
+    if (lockedHooks.size === total) {
+      setLockedHooks(new Set());
+    } else {
+      setLockedHooks(new Set(Array.from({ length: total }, (_, i) => i)));
+    }
+  }
+
+  function toggleCenaLock(cenaNum: number) {
+    setLockedCenas((prev) => {
+      const next = new Set(prev);
+      if (next.has(cenaNum)) next.delete(cenaNum);
+      else next.add(cenaNum);
+      return next;
+    });
+  }
+
+  function toggleAllCenasLock() {
+    if (lockedCenas.size === bodyCenas.length) {
+      setLockedCenas(new Set());
+    } else {
+      setLockedCenas(new Set(bodyCenas.map((c) => c.cena)));
+    }
+  }
+
+  // ── Computed for callbacks ────────────────────────────────────────────────────
+
+  function getLockedHooksData(): { index: number; text: string }[] {
+    return Array.from(lockedHooks).map((i) => ({
+      index: i,
+      text: editedHooks[i] ?? roteiro?.hooks[i] ?? "",
+    }));
+  }
+
+  function getLockedCenasData(): CenaRoteiro[] {
+    return bodyCenas
+      .filter((c) => lockedCenas.has(c.cena))
+      .map((c) => ({ ...c, fala: editedCenas[c.cena] ?? c.fala }));
+  }
+
+  function getLockedCtaData(): CenaRoteiro | undefined {
+    if (!ctaLocked || !ctaCena) return undefined;
+    return { ...ctaCena, fala: editedCtaFala || ctaCena.fala };
+  }
+
+  // ── Lock state computations ───────────────────────────────────────────────────
+
+  const totalHooks = editedHooks.length || roteiro?.hooks.length || 0;
+  const hookLockState: "none" | "some" | "all" =
+    lockedHooks.size === 0 ? "none"
+    : lockedHooks.size === totalHooks ? "all"
+    : "some";
+
+  const bodyLockState: "none" | "some" | "all" =
+    bodyCenas.length === 0 ? "none"
+    : lockedCenas.size === 0 ? "none"
+    : lockedCenas.size === bodyCenas.length ? "all"
+    : "some";
+
+  const ctaLockState: "none" | "all" = ctaLocked ? "all" : "none";
+
+  // ── Edit handlers ─────────────────────────────────────────────────────────────
 
   function handleHookChange(index: number, value: string) {
     setEditedHooks((prev) => {
@@ -230,18 +364,7 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
             size="sm"
             variant="outline"
             className="border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-xs"
-            onClick={onRegenerate}
-            disabled={loading}
-          >
-            <RefreshCw size={12} className={`mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Regenerar
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-xs"
             onClick={onGerarNovo}
-            disabled={loading}
           >
             <Wand2 size={12} className="mr-1.5" />
             Gerar novo
@@ -293,6 +416,10 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           descricao="Escolha 1 das 5 opções para abrir o vídeo"
           icon={<Zap size={15} />}
           color="violet"
+          lockState={hookLockState}
+          onLockToggle={toggleAllHooksLock}
+          onRegenerate={() => onRegenerateHooks(getLockedHooksData())}
+          loading={hooksLoading}
         />
         <div className="p-5 space-y-2.5">
           {(editedHooks.length > 0 ? editedHooks : roteiro.hooks).map((hook, i) => (
@@ -300,6 +427,18 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
               <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 mt-2">
                 <span className="text-[11px] font-bold text-violet-600">{i + 1}</span>
               </div>
+              {/* Lock button per hook */}
+              <button
+                onClick={() => toggleHookLock(i)}
+                className={`p-1.5 rounded-lg transition-all shrink-0 mt-1.5 ${
+                  lockedHooks.has(i)
+                    ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                    : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                }`}
+                title={lockedHooks.has(i) ? "Desbloquear" : "Travar este hook"}
+              >
+                {lockedHooks.has(i) ? <Lock size={13} /> : <Unlock size={13} />}
+              </button>
               <div className="flex-1 min-w-0">
                 <textarea
                   ref={(el) => { hookRefs.current[i] = el; }}
@@ -310,7 +449,7 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
                   }}
                   onFocus={(e) => autoResize(e.target)}
                   rows={1}
-                  className={`${editableBase} ${focusColors.violet}`}
+                  className={`${editableBase} ${focusColors.violet} ${lockedHooks.has(i) ? lockedStyle : ""}`}
                 />
               </div>
               <button
@@ -343,6 +482,19 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           descricao="O desenvolvimento do vídeo — contexto, solução e prova"
           icon={<Film size={15} />}
           color="slate"
+          lockState={bodyLockState}
+          onLockToggle={bodyCenas.length > 0 ? toggleAllCenasLock : undefined}
+          onRegenerate={
+            cenas
+              ? () =>
+                  onRegenerateCenas(
+                    getLockedCenasData(),
+                    true,
+                    getLockedCtaData() ?? ctaCena ?? undefined
+                  )
+              : undefined
+          }
+          loading={loadingCenas || false}
         />
 
         {loadingCenas ? (
@@ -360,6 +512,7 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
                   {showBriefing && (
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Briefing de Filmagem</th>
                   )}
+                  <th className="w-10" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -380,7 +533,7 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
                         }}
                         onFocus={(e) => autoResize(e.target)}
                         rows={1}
-                        className={`${editableBase} ${focusColors.slate}`}
+                        className={`${editableBase} ${focusColors.slate} ${lockedCenas.has(cena.cena) ? lockedStyle : ""}`}
                       />
                     </td>
                     {showBriefing && (
@@ -388,6 +541,19 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
                         <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
                       </td>
                     )}
+                    <td className="px-2 py-4 align-top w-10">
+                      <button
+                        onClick={() => toggleCenaLock(cena.cena)}
+                        className={`p-1.5 rounded-lg transition-all ${
+                          lockedCenas.has(cena.cena)
+                            ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                            : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                        }`}
+                        title={lockedCenas.has(cena.cena) ? "Desbloquear" : "Travar esta cena"}
+                      >
+                        {lockedCenas.has(cena.cena) ? <Lock size={13} /> : <Unlock size={13} />}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -409,6 +575,19 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           descricao="Como fechar o vídeo e direcionar o viewer"
           icon={<Megaphone size={15} />}
           color="emerald"
+          lockState={ctaLockState}
+          onLockToggle={ctaCena ? () => setCtaLocked((v) => !v) : undefined}
+          onRegenerate={
+            cenas
+              ? () =>
+                  onRegenerateCenas(
+                    bodyCenas.map((c) => ({ ...c, fala: editedCenas[c.cena] ?? c.fala })),
+                    false,
+                    undefined
+                  )
+              : undefined
+          }
+          loading={loadingCenas || false}
         />
 
         {loadingCenas ? (
@@ -418,17 +597,30 @@ export function RoteiroTable({ roteiros, onRegenerate, onGerarNovo, loading, cen
           </div>
         ) : ctaCena ? (
           <div className="p-5 space-y-2">
-            <textarea
-              ref={ctaRef}
-              value={editedCtaFala || ctaCena.fala}
-              onChange={(e) => {
-                setEditedCtaFala(e.target.value);
-                autoResize(e.target);
-              }}
-              onFocus={(e) => autoResize(e.target)}
-              rows={1}
-              className={`${editableBase} ${focusColors.emerald}`}
-            />
+            <div className="flex gap-2 items-start">
+              <textarea
+                ref={ctaRef}
+                value={editedCtaFala || ctaCena.fala}
+                onChange={(e) => {
+                  setEditedCtaFala(e.target.value);
+                  autoResize(e.target);
+                }}
+                onFocus={(e) => autoResize(e.target)}
+                rows={1}
+                className={`flex-1 ${editableBase} ${focusColors.emerald} ${ctaLocked ? lockedStyle : ""}`}
+              />
+              <button
+                onClick={() => setCtaLocked((v) => !v)}
+                className={`p-1.5 rounded-lg transition-all shrink-0 mt-1 ${
+                  ctaLocked
+                    ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                    : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                }`}
+                title={ctaLocked ? "Desbloquear" : "Travar CTA"}
+              >
+                {ctaLocked ? <Lock size={13} /> : <Unlock size={13} />}
+              </button>
+            </div>
             {showBriefing && ctaCena.briefingFilmagem && (
               <p className="text-gray-400 text-xs leading-relaxed pt-2 border-t border-gray-100">
                 {ctaCena.briefingFilmagem}

@@ -326,6 +326,111 @@ function GerarPageInner() {
     await gerarCenas(roteiro, cliente, produto);
   }
 
+  async function handleRegenerateHooks(locked: { index: number; text: string }[]) {
+    if (!estado.clienteId || !estado.produtoId || !estado.foco) return;
+    const cliente = getClienteById(estado.clienteId);
+    const produto = getProdutoById(estado.produtoId);
+    if (!cliente || !produto) return;
+
+    const config: ConfiguracaoGeracao = {
+      clienteId: estado.clienteId,
+      produtoId: estado.produtoId,
+      icp: estado.icp,
+      foco: estado.foco as FocoRoteiro,
+      formato: "face_to_camera",
+      oferta: computeOferta(estado),
+      mensagemObrigatoria: estado.mensagemObrigatoria,
+      anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
+    };
+
+    const hooksDeReferencia = selecionarHooksDeReferencia(estado.foco as FocoRoteiro, cliente, produto);
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/gerar-roteiros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente, produto, config, hooksDeReferencia }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Erro ao regenerar hooks."); return; }
+
+      const newHooks: string[] = data.roteiro.hooks;
+      const lockedMap = new Map(locked.map((l) => [l.index, l.text]));
+      const mergedHooks = newHooks.map((h, i) => lockedMap.get(i) ?? h);
+
+      setRoteiros((prev) => prev.map((r, i) => (i === 0 ? { ...r, hooks: mergedHooks } : r)));
+      toast.success(locked.length > 0 ? `${locked.length} hook(s) preservado(s), demais regenerados!` : "Hooks regenerados!");
+    } catch {
+      toast.error("Erro de conexão ao regenerar hooks.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro) {
+    const roteiro = roteiros[0];
+    if (!roteiro) return;
+    const cliente = getClienteById(estado.clienteId);
+    const produto = getProdutoById(estado.produtoId);
+    if (!cliente || !produto) return;
+
+    setCenesLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    try {
+      const res = await fetch("/api/gerar-cenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente,
+          produto,
+          config: {
+            icp: roteiro.icp,
+            foco: roteiro.foco,
+            formato: roteiro.formato,
+            oferta: computeOferta(estado),
+            mensagemObrigatoria: roteiro.mensagemObrigatoria,
+            anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
+          },
+          roteiro,
+          ctasDeReferencia: selecionarCtasDeReferencia(roteiro.foco),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Erro ao regenerar cenas."); return; }
+
+      const newCenas: CenaRoteiro[] = data.cenas;
+      const newBodyCenas = newCenas.slice(1, -1);
+      const newCtaCena = newCenas[newCenas.length - 1];
+
+      // Map locked body cenas to their relative positions within the current body
+      const currentCenas = cenesGeradas[roteiro.id] ?? [];
+      const currentBodyCenas = currentCenas.slice(1, -1);
+      const lockedRelPosMap = new Map<number, CenaRoteiro>();
+      lockedBodyCenas.forEach((lc) => {
+        const relPos = currentBodyCenas.findIndex((c) => c.cena === lc.cena);
+        if (relPos !== -1) lockedRelPosMap.set(relPos, lc);
+      });
+
+      // Merge: substitute new body cenas at locked relative positions
+      const mergedBodyCenas = newBodyCenas.map((c, relIdx) =>
+        lockedRelPosMap.has(relIdx) ? { ...lockedRelPosMap.get(relIdx)!, cena: c.cena } : c
+      );
+
+      // Preserve hook cena (cena 1) from current cenas
+      const hookCena = currentCenas[0] ?? newCenas[0];
+
+      // CTA: preserve if ctaLocked, otherwise use new
+      const mergedCta = ctaLocked && lockedCta ? { ...lockedCta, cena: newCtaCena.cena } : newCtaCena;
+
+      setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: [hookCena, ...mergedBodyCenas, mergedCta] }));
+      toast.success("Cenas regeneradas!");
+    } catch {
+      toast.error("Erro de conexão ao regenerar cenas.");
+    } finally {
+      setCenesLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+    }
+  }
+
   const clienteSelecionado = clientes.find((c) => c.id === estado.clienteId);
   const produtoSelecionado = produtos.find((p) => p.id === estado.produtoId);
 
@@ -730,9 +835,10 @@ function GerarPageInner() {
           ) : (
             <RoteiroTable
               roteiros={roteiros}
-              onRegenerate={handleGerar}
+              onRegenerateHooks={handleRegenerateHooks}
+              onRegenerateCenas={handleRegenerateCenas}
               onGerarNovo={() => { setRoteiros([]); setCenesGeradas({}); }}
-              loading={loading}
+              hooksLoading={loading}
               cenesGeradas={cenesGeradas}
               cenesLoading={cenesLoading}
               onGerarCenas={handleGerarCenas}
