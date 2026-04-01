@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CenaRoteiro, Roteiro, FOCO_LABELS, FORMATO_LABELS } from "@/types";
 import {
-  Check, ChevronDown, ChevronUp, ClipboardCopy, Loader2,
+  Check, ClipboardCopy, Loader2,
   RefreshCw, Wand2, Zap, Film, Megaphone, Copy, Lock, Unlock,
 } from "lucide-react";
 
@@ -77,7 +77,7 @@ function SectionHeader({
   loading,
 }: {
   label: string;
-  descricao: string;
+  descricao?: string;
   icon: React.ReactNode;
   color: "violet" | "slate" | "emerald";
   lockState?: "none" | "some" | "all";
@@ -109,22 +109,25 @@ function SectionHeader({
         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${colors.badge}`}>
           {label}
         </span>
-        <p className="text-[11px] text-gray-400 mt-0.5 leading-none">{descricao}</p>
+        {descricao && <p className="text-[11px] text-gray-400 mt-0.5 leading-none">{descricao}</p>}
       </div>
       <div className="flex items-center gap-1 shrink-0">
         {onLockToggle && lockState !== undefined && (
           <button
             onClick={onLockToggle}
-            className={`p-1.5 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
               lockState === "all"
-                ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
                 : lockState === "some"
-                ? "text-amber-300 bg-amber-50/60 hover:bg-amber-100"
-                : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                ? "text-amber-400 bg-amber-50/60 hover:bg-amber-100"
+                : "text-gray-400 hover:text-amber-500 hover:bg-amber-50"
             }`}
             title={lockState === "all" ? "Desbloquear todos" : "Travar todos"}
           >
             {lockState === "all" ? <Lock size={13} /> : <Unlock size={13} />}
+            <span className="text-[11px] font-semibold leading-none">
+              {lockState === "all" ? "Soltar todos" : "Travar todos"}
+            </span>
           </button>
         )}
         {onRegenerate && (
@@ -177,7 +180,6 @@ export function RoteiroTable({
 }: RoteiroTableProps) {
   const [copied, setCopied] = useState<{ [id: string]: boolean }>({});
   const [copiedHook, setCopiedHook] = useState<number | null>(null);
-  const [showBriefing, setShowBriefing] = useState(false);
   const [editedHooks, setEditedHooks] = useState<string[]>([]);
   const [editedCenas, setEditedCenas] = useState<Record<number, string>>({});
   const [editedCtaFala, setEditedCtaFala] = useState<string>("");
@@ -186,6 +188,9 @@ export function RoteiroTable({
   const [lockedHooks, setLockedHooks] = useState<Set<number>>(new Set());
   const [lockedCenas, setLockedCenas] = useState<Set<number>>(new Set());
   const [ctaLocked, setCtaLocked] = useState(false);
+
+  // Favoritos (hooks selecionados para copiar, máx 3)
+  const [selectedHooks, setSelectedHooks] = useState<Set<number>>(new Set());
 
   const hookRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const cenaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
@@ -202,11 +207,12 @@ export function RoteiroTable({
     el.style.height = `${el.scrollHeight}px`;
   }
 
-  // Reset locks when a new roteiro is generated (ID changes)
+  // Reset locks e seleção quando novo roteiro é gerado (ID muda)
   useEffect(() => {
     setLockedHooks(new Set());
     setLockedCenas(new Set());
     setCtaLocked(false);
+    setSelectedHooks(new Set());
   }, [roteiros[0]?.id]); // eslint-disable-line
 
   // Sync hooks when new roteiro arrives or regen parcial occurs (object reference changes)
@@ -226,16 +232,16 @@ export function RoteiroTable({
     }
   }, [cenas]); // eslint-disable-line
 
-  // Auto-resize all textareas after state updates
-  useEffect(() => {
+  // Auto-resize all textareas após commit do DOM (useLayoutEffect mede antes do paint)
+  useLayoutEffect(() => {
     hookRefs.current.forEach((el) => { if (el) autoResize(el); });
   }, [editedHooks]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     Object.values(cenaRefs.current).forEach((el) => { if (el) autoResize(el); });
   }, [editedCenas]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (ctaRef.current) autoResize(ctaRef.current);
   }, [editedCtaFala]);
 
@@ -314,6 +320,15 @@ export function RoteiroTable({
 
   // ── Edit handlers ─────────────────────────────────────────────────────────────
 
+  function toggleSelectHook(i: number) {
+    setSelectedHooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else if (next.size < 3) next.add(i);
+      return next;
+    });
+  }
+
   function handleHookChange(index: number, value: string) {
     setEditedHooks((prev) => {
       const next = [...prev];
@@ -329,7 +344,11 @@ export function RoteiroTable({
   }
 
   async function handleCopy(r: Roteiro) {
-    const roteiroComEdits = { ...r, hooks: editedHooks.length > 0 ? editedHooks : r.hooks };
+    const allHooks = editedHooks.length > 0 ? editedHooks : r.hooks;
+    const hooksParaCopiar = selectedHooks.size > 0
+      ? allHooks.filter((_, i) => selectedHooks.has(i))
+      : allHooks;
+    const roteiroComEdits = { ...r, hooks: hooksParaCopiar };
     const cenasComEdits = cenas
       ? cenas.map((c) =>
           c === ctaCena
@@ -337,7 +356,7 @@ export function RoteiroTable({
             : { ...c, fala: editedCenas[c.cena] ?? c.fala }
         )
       : undefined;
-    const texto = formatRoteiroParaTexto(roteiroComEdits, cenasComEdits, showBriefing);
+    const texto = formatRoteiroParaTexto(roteiroComEdits, cenasComEdits, false);
     await navigator.clipboard.writeText(texto);
     setCopied((prev) => ({ ...prev, [r.id]: true }));
     setTimeout(() => setCopied((prev) => ({ ...prev, [r.id]: false })), 2000);
@@ -358,44 +377,18 @@ export function RoteiroTable({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-xs"
-            onClick={onGerarNovo}
-          >
-            <Wand2 size={12} className="mr-1.5" />
-            Gerar novo
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {cenas && cenas.length > 0 && (
-            <button
-              onClick={() => setShowBriefing(!showBriefing)}
-              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-violet-600 transition-colors font-medium"
-            >
-              {showBriefing ? (
-                <><ChevronUp size={12} />Ocultar briefing</>
-              ) : (
-                <><ChevronDown size={12} />Ver briefing</>
-              )}
-            </button>
+      <div className="flex items-center justify-end">
+        <Button
+          size="sm"
+          className="bg-violet-600 hover:bg-violet-500 text-white text-xs"
+          onClick={() => handleCopy(roteiro)}
+        >
+          {copied[roteiro.id] ? (
+            <><Check size={12} className="mr-1.5" />Copiado!</>
+          ) : (
+            <><ClipboardCopy size={12} className="mr-1.5" />Copiar roteiro</>
           )}
-          <Button
-            size="sm"
-            className="bg-violet-600 hover:bg-violet-500 text-white text-xs"
-            onClick={() => handleCopy(roteiro)}
-          >
-            {copied[roteiro.id] ? (
-              <><Check size={12} className="mr-1.5" />Copiado!</>
-            ) : (
-              <><ClipboardCopy size={12} className="mr-1.5" />Copiar roteiro</>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
 
       {/* Meta */}
@@ -413,54 +406,75 @@ export function RoteiroTable({
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
         <SectionHeader
           label="Hook"
-          descricao="Escolha 1 das 5 opções para abrir o vídeo"
+          descricao={
+            selectedHooks.size === 0
+              ? "Selecione até 3 favoritos para copiar no roteiro"
+              : `${selectedHooks.size}/3 selecionado${selectedHooks.size > 1 ? "s" : ""} — só esses serão copiados`
+          }
           icon={<Zap size={15} />}
           color="violet"
-          lockState={hookLockState}
-          onLockToggle={toggleAllHooksLock}
           onRegenerate={() => onRegenerateHooks(getLockedHooksData())}
           loading={hooksLoading}
         />
         <div className="p-5 space-y-2.5">
-          {(editedHooks.length > 0 ? editedHooks : roteiro.hooks).map((hook, i) => (
-            <div key={i} className="flex gap-3 items-start group/hook">
-              <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 mt-2">
-                <span className="text-[11px] font-bold text-violet-600">{i + 1}</span>
+          {(editedHooks.length > 0 ? editedHooks : roteiro.hooks).map((hook, i) => {
+            const isSelected = selectedHooks.has(i);
+            const isDisabled = selectedHooks.size >= 3 && !isSelected;
+            return (
+              <div key={i} className={`flex gap-3 items-start group/hook transition-opacity ${isDisabled ? "opacity-40" : ""}`}>
+                {/* Checkbox favorito */}
+                <button
+                  onClick={() => toggleSelectHook(i)}
+                  disabled={isDisabled}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-2 transition-all ${
+                    isSelected
+                      ? "border-violet-500 bg-violet-500 text-white"
+                      : isDisabled
+                      ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+                      : "border-gray-300 hover:border-violet-400 bg-white cursor-pointer"
+                  }`}
+                  title={isSelected ? "Remover dos favoritos" : isDisabled ? "Limite de 3 atingido" : "Marcar como favorito"}
+                >
+                  {isSelected && <Check size={11} strokeWidth={3} />}
+                </button>
+                <div className="w-6 h-6 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 mt-2">
+                  <span className="text-[11px] font-bold text-violet-600">{i + 1}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <textarea
+                    ref={(el) => { hookRefs.current[i] = el; if (el) autoResize(el); }}
+                    value={hook}
+                    onChange={(e) => {
+                      handleHookChange(i, e.target.value);
+                      autoResize(e.target);
+                    }}
+                    onFocus={(e) => autoResize(e.target)}
+                    rows={1}
+                    className={`${editableBase} ${focusColors.violet} ${lockedHooks.has(i) ? lockedStyle : ""} ${isSelected ? "border-violet-300 bg-violet-50/40" : ""}`}
+                  />
+                </div>
+                {/* Lock button per hook */}
+                <button
+                  onClick={() => toggleHookLock(i)}
+                  className={`p-1.5 rounded-lg transition-all shrink-0 mt-1.5 ${
+                    lockedHooks.has(i)
+                      ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                      : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                  }`}
+                  title={lockedHooks.has(i) ? "Desbloquear" : "Travar este hook"}
+                >
+                  {lockedHooks.has(i) ? <Lock size={13} /> : <Unlock size={13} />}
+                </button>
+                <button
+                  onClick={() => handleCopyHook(i)}
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-all opacity-0 group-hover/hook:opacity-100 shrink-0 mt-1.5"
+                  title="Copiar hook"
+                >
+                  {copiedHook === i ? <Check size={13} className="text-violet-500" /> : <Copy size={13} />}
+                </button>
               </div>
-              {/* Lock button per hook */}
-              <button
-                onClick={() => toggleHookLock(i)}
-                className={`p-1.5 rounded-lg transition-all shrink-0 mt-1.5 ${
-                  lockedHooks.has(i)
-                    ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
-                    : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
-                }`}
-                title={lockedHooks.has(i) ? "Desbloquear" : "Travar este hook"}
-              >
-                {lockedHooks.has(i) ? <Lock size={13} /> : <Unlock size={13} />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <textarea
-                  ref={(el) => { hookRefs.current[i] = el; }}
-                  value={hook}
-                  onChange={(e) => {
-                    handleHookChange(i, e.target.value);
-                    autoResize(e.target);
-                  }}
-                  onFocus={(e) => autoResize(e.target)}
-                  rows={1}
-                  className={`${editableBase} ${focusColors.violet} ${lockedHooks.has(i) ? lockedStyle : ""}`}
-                />
-              </div>
-              <button
-                onClick={() => handleCopyHook(i)}
-                className="p-1.5 rounded-lg text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-all opacity-0 group-hover/hook:opacity-100 shrink-0 mt-1.5"
-                title="Copiar hook"
-              >
-                {copiedHook === i ? <Check size={13} className="text-violet-500" /> : <Copy size={13} />}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {roteiro.mensagemObrigatoria && (
@@ -479,7 +493,6 @@ export function RoteiroTable({
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
         <SectionHeader
           label="Body"
-          descricao="O desenvolvimento do vídeo — contexto, solução e prova"
           icon={<Film size={15} />}
           color="slate"
           lockState={bodyLockState}
@@ -509,9 +522,6 @@ export function RoteiroTable({
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
-                  {showBriefing && (
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-2/5">Briefing de Filmagem</th>
-                  )}
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -536,11 +546,6 @@ export function RoteiroTable({
                         className={`${editableBase} ${focusColors.slate} ${lockedCenas.has(cena.cena) ? lockedStyle : ""}`}
                       />
                     </td>
-                    {showBriefing && (
-                      <td className="px-4 py-4 align-top">
-                        <p className="text-gray-500 leading-relaxed text-sm">{cena.briefingFilmagem}</p>
-                      </td>
-                    )}
                     <td className="px-2 py-4 align-top w-10">
                       <button
                         onClick={() => toggleCenaLock(cena.cena)}
@@ -572,7 +577,6 @@ export function RoteiroTable({
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
         <SectionHeader
           label="CTA"
-          descricao="Como fechar o vídeo e direcionar o viewer"
           icon={<Megaphone size={15} />}
           color="emerald"
           lockState={ctaLockState}
@@ -621,17 +625,27 @@ export function RoteiroTable({
                 {ctaLocked ? <Lock size={13} /> : <Unlock size={13} />}
               </button>
             </div>
-            {showBriefing && ctaCena.briefingFilmagem && (
-              <p className="text-gray-400 text-xs leading-relaxed pt-2 border-t border-gray-100">
-                {ctaCena.briefingFilmagem}
-              </p>
-            )}
           </div>
         ) : (
           <div className="px-5 py-6 text-sm text-gray-400 italic">
             CTA será exibido após a geração.
           </div>
         )}
+      </div>
+
+      {/* Botão copiar — fim do roteiro */}
+      <div className="flex items-center justify-end">
+        <Button
+          size="sm"
+          className="bg-violet-600 hover:bg-violet-500 text-white text-xs"
+          onClick={() => handleCopy(roteiro)}
+        >
+          {copied[roteiro.id] ? (
+            <><Check size={12} className="mr-1.5" />Copiado!</>
+          ) : (
+            <><ClipboardCopy size={12} className="mr-1.5" />Copiar roteiro</>
+          )}
+        </Button>
       </div>
     </div>
   );

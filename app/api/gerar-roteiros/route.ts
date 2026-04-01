@@ -48,81 +48,86 @@ Você tem 2 segundos. O hook define tudo.
 
 ---
 
-**LEI DO LOOP ABERTO + CURIOSIDADE OBRIGATÓRIA:**
+**SEU TRABALHO COM HOOKS É DE ADAPTAÇÃO, NÃO DE CRIAÇÃO LIVRE**
+
+Quando você receber estruturas de referência do banco de hooks, elas são seu esqueleto quase-literal. Sua função é preencher os [placeholders] com a linguagem específica do produto, dor e avatar — mantendo o tamanho, ritmo e estrutura original.
+
+Não use as referências como "inspiração vaga". Use como molde. Se o banco diz "Foi com ISSO AQUI que os resultados do meu [área] mudaram", o hook final deve ter essa cadência, esse comprimento, esse pronome vazio no lugar certo.
+
+Se não receber referências, use as 5 estruturas abaixo como molde com o mesmo rigor.
+
+---
+
+**LEI DO TAMANHO — INEGOCIÁVEL:**
+
+**Alvo: 8 a 11 palavras. Máximo absoluto: 13 palavras.**
+
+Se o seu hook passou de 11 palavras, você não editou o suficiente. Corte. Se passou de 13, rejeite e reescreva do zero.
+
+Conte as palavras antes de aceitar qualquer hook. Um hook de 16 palavras é automaticamente reprovado, sem exceção.
+
+**PROIBIDO: usar "e" para encadear duas cláusulas em um hook.** "Fiz X e o resultado foi Y" = duas ideias = duas frases = reprova. O hook é uma tensão única, não dois pensamentos conectados.
+
+---
+
+**LEI DO LOOP ABERTO:**
 
 Todo hook tem UMA função: fazer o viewer sentir que precisa ver o que vem depois.
 
-A curiosidade vem de UMA coisa só: **reter a informação mais importante.** O hook menciona que algo aconteceu, mas NÃO revela o quê. O viewer fica sem saber — e precisa continuar pra fechar o loop.
+**REGRA DE OURO: o hook nunca entrega a resposta. Nunca nomeia o produto. Nunca revela o benefício. Ele entrega apenas a tensão.**
 
-**REGRA DE OURO: o hook nunca entrega a resposta. Ele entrega apenas a tensão.**
+- ❌ "Esse pão aqui foi o que faltava pra ganhar massa." → entrega o benefício (ganhar massa). Loop fechado.
+- ❌ "Fiz uma troca no café da manhã e meu corpo respondeu diferente." → duas cláusulas com "e", 13 palavras mas estrutura composta.
+- ❌ "Ninguém me falou que dava pra ganhar massa sem abrir mão do pão." → longa, resolve a tensão.
 
-Análise de cada exemplo:
+- ✅ "Foi isso aqui que mudou o meu ganho de massa." → 10 palavras. O quê é isso? Preciso ver.
+- ✅ "Esse erro me custou meses de treino sem resultado." → 10 palavras. Que erro? Preciso saber.
+- ✅ "Minha nutricionista me falou uma coisa e eu não queria acreditar." → 12 palavras. O quê ela falou?
+- ✅ "Nunca imaginei que isso aqui ia mudar a minha composição corporal." → 12 palavras. O que é isso?
+- ✅ "O problema nunca foi o carboidrato. Demorei anos pra entender." → 10 palavras. Entender o quê?
 
-- ❌ "Passei anos tentando emagrecer e o que mais me sabotava era o pão." → ENTREGA a resposta (pão). Viewer não precisa continuar.
-- ❌ "Cortei tudo da dieta e não perdi nada." → Descreve dor mas não abre nenhum mistério. O viewer entende e segue.
-- ❌ "Ninguém me contou o que o efeito sanfona faz com o corpo." → Vago demais. Qual é o mistério específico?
+**TÉCNICA DO PRONOME VAZIO:**
 
-- ✅ "Passei anos tentando emagrecer sem entender o que me sabotava." → O quê era? Preciso saber.
-- ✅ "Eu cortei carboidrato por meses e o resultado foi o oposto do que eu esperava." → Qual oposto? Preciso ver.
-- ✅ "Meu médico me falou uma coisa sobre metabolismo que me deixou sem chão." → O quê ele falou?
-- ✅ "Ninguém me avisou o que cortar tudo da dieta ia fazer com o meu músculo." → O quê fez?
-- ✅ "Fiz tudo que mandavam e piorei. Só entendi o motivo muito depois." → Qual motivo?
+"isso", "esse", "essa", "aqui" apontam pra algo não revelado. O viewer precisa continuar pra descobrir.
 
-**A estrutura:** situação → algo aconteceu → [a resposta é retida] → viewer precisa do vídeo pra fechar.
-
-**TÉCNICA DO PRONOME VAZIO — a forma mais eficiente de criar curiosidade:**
-
-Palavras como "isso", "esse", "essa", "aqui" apontam pra algo específico que ainda não foi revelado. O viewer precisa continuar pra descobrir o que é.
-
-- ❌ "Ninguém me avisou o que cortar carboidrato faz com o músculo." → descreve o problema, não aponta pra nada
-- ✅ "Ninguém me avisou sobre isso que acontece com o músculo quando você corta tudo." → "isso" cria a lacuna
-- ❌ "Eu descobri como ganhar massa sem cortar pão." → statement de benefício, fechado
-- ✅ "Esse erro aqui me custou 6 meses de treino." → "esse erro aqui" aponta pra algo específico não revelado
-- ✅ "Foi isso que a minha personal falou que mudou tudo." → "isso" é a lacuna
-Use pronomes demonstrativos pra criar um "dedo apontando pra algo invisível". O viewer precisa ver o vídeo pra descobrir o que é esse/essa/isso.
-
-**FORMATO OBRIGATÓRIO: 1 frase. Ponto final. Sem exceção.**
-**PROIBIDO: travessão (—) em qualquer hook.**
+- ❌ "Eu descobri como ganhar massa sem cortar pão." → revela tudo, sem lacuna
+- ✅ "Foi isso aqui que destravou o meu ganho de massa." → "isso aqui" = o que é?
 
 ---
 
-**Pattern interrupt — entre no meio:**
-Não comece do início da história. Comece no pico — no momento de virada, no erro, na descoberta, no choque. O viewer deve sentir que perdeu algo e precisa recuperar.
+**5 ESTRUTURAS VALIDADAS — use 1 por hook:**
+
+1. **Pronome apontado:** "Foi isso aqui que [resultado específico]." → o que é isso?
+2. **Erro com custo:** "Esse erro aqui me custou [consequência concreta]." → qual erro?
+3. **Revelação retida:** "[Autoridade/pessoa] me falou uma coisa sobre [tema] que mudou tudo." → o quê ela falou?
+4. **Subversão de crença:** "O problema nunca foi [crença comum]. Demorei [tempo] pra entender." → entender o quê?
+5. **Resultado invertido:** "Fiz [ação comum] por [tempo] sem entender o que eu tava errando." → o que estava errando?
+
+Cada estrutura = 1 frase. 8-11 palavras idealmente. Pronome vazio obrigatório.
 
 ---
 
-**5 estruturas — use 1 diferente por hook, sempre com pronome vazio:**
-
-1. **Erro apontado:** "Esse erro aqui me custou [consequência real]." → que erro é esse?
-2. **Resultado suspenso:** "Fiz [esforço] e o resultado foi o oposto do que eu esperava." → qual oposto?
-3. **Revelação com pronome:** "Ninguém me avisou sobre isso que acontece quando você [ação comum]." → sobre o quê?
-4. **Subversão de crença:** "O problema nunca foi [crença comum]. Demorei anos pra entender isso." → entender o quê?
-5. **Informação retida:** "Foi isso que [pessoa/autoridade] me falou e eu não queria acreditar." → o quê ela falou?
-
-Regra: toda estrutura deve ter pelo menos 1 pronome vazio (esse, essa, isso, aqui) apontando pra algo não revelado.
-
----
-
-**PROIBIDO no hook — nunca use:**
-- Travessão (—) — nunca, em nenhuma hipótese
-- "Você já…", "Você sabia…", "Você sabe…"
-- "Se você quer…", "Descubra como…", "Aprenda a…"
-- "Hoje eu vou te mostrar…", "Esse vídeo é sobre…"
-- "Olá!", "Oi pessoal", qualquer saudação
-- Qualquer frase que descreve dor sem abrir loop
+**PROIBIDO no hook:**
+- Travessão (—)
+- "e" conectando duas cláusulas ("fiz X e aconteceu Y")
+- Revelar o produto, o benefício ou a solução
+- Mais de 13 palavras
+- "Você já…", "Se você quer…", "Descubra como…", "Hoje eu vou…"
+- Frases em terceira pessoa ("Trocou o pão por…")
+- Qualquer saudação
 
 ---
 
-**VALIDAÇÃO INTERNA OBRIGATÓRIA — antes de aceitar cada hook:**
-1. É 1 frase completa? Se for fragmento ou tiver mais de 1 frase → reescreva.
-2. Tem travessão? Se sim → reescreva.
-3. O hook RETÉM a informação mais importante ou a entrega? Se entrega → reescreva.
-4. O viewer sabe exatamente o que vai acontecer depois? Se sim → o loop está fechado. Reescreva.
-5. Parece genérico ou de anúncio? Se sim → reescreva.
-6. Soa fluido se falado em voz alta, como numa conversa? Se soar truncado ou robótico → reescreva.
-7. Tem elemento de curiosidade (loop aberto, pronome vazio, informação retida)? Se não → reescreva.
+**VALIDAÇÃO OBRIGATÓRIA antes de aceitar cada hook:**
+1. Conta as palavras. Passou de 13? → rejeita e reescreva.
+2. Tem "e" conectando duas cláusulas? → rejeita.
+3. Revela o produto, benefício ou solução? → rejeita.
+4. O viewer consegue saber o que vem depois sem ver o vídeo? → rejeita.
+5. É primeira pessoa? → confirma.
+6. Tem pronome vazio (isso, esse, essa, aqui) apontando pra algo não revelado? → confirma.
+7. Soa como algo que alguém falaria em voz alta numa conversa? → confirma.
 
-Um hook só passa se criar uma pergunta específica na cabeça do viewer que ele não consegue responder sem ver o vídeo.
+Um hook só passa em TODOS os 7 critérios. Qualquer reprovação = reescreva do zero.
 
 ### 2. Cenas curtas, transições fortes
 - Cada cena = 1 ideia, máximo 2 frases
@@ -248,40 +253,48 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 \`\`\`
 
 ### Regras dos 5 hooks
-- Cada hook = estrutura e angulação emocional completamente diferente
-- Variar entre: subversão de lógica, confissão, revelação suspensa, contradição, resultado inesperado
-- **1 FRASE. Ponto final. Sem exceção. Sem fragmentos isolados.**
-- Máximo 15 palavras — a frase deve soar completa, fluida e conversacional, não truncada
-- **100% dos hooks devem ter elemento de curiosidade** (loop aberto, pronome vazio ou informação retida) — sem exceção
+- Cada hook = 1 das 5 estruturas validadas, cada estrutura usada no máximo 1 vez
+- **1 FRASE. Ponto final. Sem exceção.**
+- **8 a 11 palavras idealmente. Máximo absoluto: 13 palavras. Conte antes de aceitar.**
+- **Proibido "e" como conector de cláusulas**
+- **Proibido revelar produto, benefício ou solução**
+- 100% devem ter pronome vazio (isso, esse, essa, aqui) apontando pra algo não revelado
 - Nenhum pode começar com a mesma palavra que outro
-- Pelo menos 1 obrigatoriamente deve subverter uma lógica ou crença comum
-- Aplicar a validação interna em CADA um antes de aceitar
-- Proibido: qualquer frase dos padrões genéricos listados acima
+- Todos em primeira pessoa
+- Se recebeu referências do banco: adapte a estrutura quasi-literalmente, preenchendo o contexto do produto/dor/avatar
+- Aplicar os 7 critérios de validação em CADA hook antes de aceitar
 
 ---
 
 ## EXEMPLOS DE HOOKS DE ALTA QUALIDADE
 
-**Subversão de lógica (dieta):**
-"O problema nunca foi o pão. Demorei anos pra entender isso."
+Todos abaixo: ≤13 palavras, 1ª pessoa, pronome vazio, loop aberto.
 
-**Subversão de lógica (skincare):**
-"Hidratante caro não entra na pele. Aprendi isso depois de R$600 jogados fora."
+**Pronome apontado (ganho de massa):** [9 palavras]
+"Foi isso aqui que destravou o meu ganho de massa."
 
-**Confissão com lacuna (fitness):**
-"Fiz tudo certo por 6 meses sem entender o que eu tava errando."
+**Erro com custo (treino):** [9 palavras]
+"Esse erro aqui me custou meses de resultado."
 
-**Revelação suspensa (suplemento):**
-"Tem uma coisa que ninguém fala sobre metabolismo depois dos 40."
+**Subversão de crença (dieta):** [10 palavras]
+"O problema nunca foi o pão. Demorei anos pra entender."
 
-**Contradição direta (dieta):**
-"Passei anos cortando pão. Aí descobri que esse não era o problema."
+**Revelação retida (skincare):** [11 palavras]
+"Minha dermatologista me falou uma coisa sobre hidratante que me deixou sem chão."
 
-**Resultado inesperado (lifestyle):**
-"Eu tava prestes a desistir. Aí minha amiga me mandou uma coisa."
+**Resultado invertido (fitness):** [11 palavras]
+"Fiz tudo certo por meses sem entender o que eu errava."
 
-**Resultado inesperado (objeção):**
-"Comprei achando que era mais do mesmo e o resultado me surpreendeu de um jeito que eu não esperava."
+**Pronome apontado (saúde):** [10 palavras]
+"Nunca imaginei que isso aqui ia mudar a minha disposição."
+
+**Subversão (emagrecimento):** [9 palavras]
+"Cortei tudo da dieta e não era esse o caminho."
+
+❌ NUNCA assim (passa de 13 palavras OU entrega a resposta OU usa "e"):
+- "Esse pão aqui foi o que faltava pra eu finalmente começar a ganhar massa sem abandonar a dieta." → 18 palavras, entrega tudo
+- "Fiz uma troca simples no café e meu corpo respondeu de um jeito que eu não esperava." → "e" conector, 17 palavras
+- "Trocou o pão comum por isso aqui e o resultado foi o oposto do que eu imaginava." → 3ª pessoa, "e" conector, 17 palavras
 
 **CTA com oferta:**
 "Frete grátis só hoje. Link na bio, dois cliques e chega em casa. Não deixa passar."
@@ -293,16 +306,20 @@ Retorne um objeto JSON com 5 hooks alternativos para o roteiro. Cada hook é uma
 
 ---
 
-## TESTE ANTI-IA (OBRIGATÓRIO antes de entregar)
+## TESTE FINAL OBRIGATÓRIO antes de entregar
 
-Valide cada hook:
-- É 1 frase completa e fluida? Se for fragmento ou se soar truncado → reescreva.
-- Tem elemento de curiosidade? Se não abrir nenhum loop → reescreva.
-- Isso parece algo que alguém falaria em voz alta, naturalmente?
-- Parece improvisado — ou parece roteirizado demais?
-- Tem alguma palavra ou frase que denuncia IA? (conector formal, linguagem corporativa, travessão, estrutura perfeita demais)
-- Se parecer texto de blog ou anúncio → reescreva.
-- Se parecer conversa → está certo.
+Para cada um dos 5 hooks, execute em ordem:
+
+1. **Conte as palavras.** Passou de 13? → reescreva.
+2. **Tem "e" conectando cláusulas?** → reescreva.
+3. **Revela produto, benefício ou solução?** → reescreva.
+4. **É primeira pessoa?** → confirma ou reescreva.
+5. **Tem pronome vazio (isso/esse/essa/aqui)?** → confirma ou reescreva.
+6. **O viewer consegue fechar o loop sem ver o vídeo?** → se sim, reescreva.
+7. **Soa como conversa falada em voz alta?** → se não, reescreva.
+8. **Seguiu uma das 5 estruturas validadas (ou a estrutura do banco)?** → confirma ou reescreva.
+
+Só entregue o hook se passou em todos os 8. Um reprovado = reescreve o hook inteiro.
 
 Entregue apenas o JSON. Sem explicações antes ou depois.`;
 
@@ -357,7 +374,7 @@ ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
 - Oferta ativa: ${config.oferta || "nenhuma"}
 - Mensagem obrigatória no CTA: ${config.mensagemObrigatoria || "nenhuma"}${
   hooksDeReferencia && hooksDeReferencia.length > 0
-    ? `\n\n## ESTRUTURAS DE HOOK DE REFERÊNCIA\nEsses são os templates do banco de hooks vencedores selecionados para este foco e nicho. Use-os como molduras estruturais — adapte cada um ao contexto específico desta marca, produto e avatar. Não copie literalmente; personalize com as dores, desejos e linguagem do ICP e com o posicionamento da marca. Cada hook que você gerar deve seguir a lógica de uma dessas estruturas:\n${hooksDeReferencia.map((h, i) => `${i + 1}. ${h}`).join("\n")}`
+    ? `\n\n## ESTRUTURAS DE HOOK DE REFERÊNCIA (USE COMO MOLDE QUASI-LITERAL)\nEstas são estruturas validadas do banco. Seu trabalho é de adaptação: mantenha o esqueleto, o comprimento e o ritmo de cada uma. Preencha os [placeholders] com a linguagem específica desta marca, produto e avatar. NÃO crie hooks do zero quando tiver referências — adapte estas.\n${hooksDeReferencia.map((h, i) => `${i + 1}. ${h}`).join("\n")}`
     : ""
 }`;
 }

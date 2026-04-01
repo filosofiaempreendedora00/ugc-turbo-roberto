@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState, Suspense } from "react";
+import { useEffect, useReducer, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RoteiroTable } from "@/components/roteiro/RoteiroTable";
 import {
   CenaRoteiro, Cliente, ConfiguracaoGeracao, FocoRoteiro, FormatoRoteiro,
-  Produto, Roteiro, FOCO_LABELS, FORMATO_ICONS, FORMATO_LABELS, AvatarICP,
+  Produto, Roteiro, FOCO_LABELS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
 import { ChevronDown, Lock, Loader2, Wand2 } from "lucide-react";
@@ -167,6 +167,7 @@ function GerarPageInner() {
   const [avatarSelecionadoId, setAvatarSelecionadoId] = useState("");
   const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [loading, setLoading] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null);
   const [cenesGeradas, setCenesGeradas] = useState<{ [id: string]: CenaRoteiro[] }>({});
   const [cenesLoading, setCenesLoading] = useState<{ [id: string]: boolean }>({});
   const [doresTags, setDoresTags] = useState<string[]>([]);
@@ -236,7 +237,8 @@ function GerarPageInner() {
     if (!estado.clienteId) { toast.error("Selecione um cliente."); return; }
     if (!estado.produtoId) { toast.error("Selecione um produto."); return; }
     if (!estado.foco) { toast.error("Escolha o foco do roteiro."); return; }
-    if (!estado.formato) { toast.error("Escolha o formato do roteiro."); return; }
+
+    resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     const cliente = getClienteById(estado.clienteId);
     const produto = getProdutoById(estado.produtoId);
@@ -255,6 +257,7 @@ function GerarPageInner() {
 
     const hooksDeReferencia = selecionarHooksDeReferencia(estado.foco as FocoRoteiro, cliente, produto);
 
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setLoading(true);
     try {
       const res = await fetch("/api/gerar-roteiros", {
@@ -616,38 +619,6 @@ function GerarPageInner() {
               );
             })()}
 
-            {/* Formato */}
-            <div className="space-y-2">
-              <Label className="text-gray-700 text-xs">Formato</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {FORMATOS.map((formato) => {
-                  const disponivel = formato === "face_to_camera";
-                  const ativo = estado.formato === formato;
-                  return (
-                    <button
-                      key={formato}
-                      type="button"
-                      disabled={!disponivel}
-                      onClick={() => disponivel && dispatch({ type: "SET_CAMPO", campo: "formato", valor: formato })}
-                      className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left relative ${
-                        ativo
-                          ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                          : disponivel
-                          ? "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                          : "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
-                      }`}
-                    >
-                      <span className="mr-1.5">{FORMATO_ICONS[formato]}</span>
-                      {FORMATO_LABELS[formato]}
-                      {!disponivel && (
-                        <Lock size={9} className="absolute top-1.5 right-1.5 text-gray-300" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Oferta */}
             <div className="space-y-2">
               <Label className="text-gray-700 text-xs">
@@ -768,13 +739,13 @@ function GerarPageInner() {
               )}
             </div>
 
-            {/* Mensagem obrigatória */}
+            {/* Direcionamento adicional */}
             <div className="space-y-2">
               <Label className="text-gray-700 text-xs">
-                Mensagem obrigatória <span className="text-gray-400 font-normal">(opcional)</span>
+                Direcionamento adicional <span className="text-gray-400 font-normal">(opcional)</span>
               </Label>
               <Input
-                placeholder="Ex: Link na bio com 20% de desconto!"
+                placeholder="Ex: Mencionar o frete grátis no final"
                 className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm"
                 value={estado.mensagemObrigatoria}
                 onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "mensagemObrigatoria", valor: e.target.value })}
@@ -812,15 +783,14 @@ function GerarPageInner() {
               />
               <ResumoLinha label="Foco" valor={estado.foco ? FOCO_LABELS[estado.foco as FocoRoteiro] : undefined} />
               <ResumoLinha label="Ângulo central" valor={angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined} />
-              <ResumoLinha label="Formato" valor={estado.formato ? FORMATO_LABELS[estado.formato as FormatoRoteiro] : undefined} />
               <ResumoLinha label="Oferta" valor={computeOferta(estado) || undefined} />
-              <ResumoLinha label="Mensagem" valor={estado.mensagemObrigatoria || undefined} />
+              <ResumoLinha label="Direcionamento" valor={estado.mensagemObrigatoria || undefined} />
             </div>
           </div>
         </div>
 
         {/* Painel de resultados */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div ref={resultadoRef} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="relative mb-5">
