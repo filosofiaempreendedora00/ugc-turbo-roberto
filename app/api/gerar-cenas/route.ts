@@ -161,8 +161,12 @@ O CTA é a conclusão natural da história, não um encerramento de comercial.
 
 **O que fazer:**
 - Referencie emocionalmente onde você chegou (brevemente, 1 ideia)
-- Indique o site de forma direta e natural, como você falaria pra uma amiga
-- Se houver oferta ativa: mencione como informação útil, não como argumento de venda
+- Indique o site de forma direta e natural
+- **Se houver oferta ativa nos dados de geração: a oferta DEVE aparecer no CTA. Não é opcional, não pode ser ignorada.** Integre após a indicação do site, como informação útil — nunca como pressão de venda.
+  - Frete grátis → "...entra no site da [MARCA] e dá uma conferida — ainda tá com frete grátis"
+  - Desconto → "...confere no site da [MARCA], tá com X% off no primeiro pedido"
+  - Compre X leve Y → "...entra no site da [MARCA], tá com compre [X] leve [Y]"
+  - Oferta manual → adapte com o mesmo tom, sempre após a indicação do site
 
 **Exemplos que funcionam:**
 - "Valeu muito pra mim. Se quiser ver mais, é no site deles mesmo."
@@ -377,8 +381,9 @@ Para o body como bloco:
 10. **A métrica de resultado é coerente com o ângulo central?** Ganho de massa → espelho/shape, não balança. → Se incoerente, reescreva.
 
 Para o CTA:
-11. Tem "se eu fosse você", "chance pra isso", "não perca", "clique", "acesse agora"? → reescreva.
-12. Tom é de indicação natural, não de vendedor? Se não → reescreva.
+11. **Havia oferta ativa nos dados de geração?** Se sim, ela aparece no CTA? Se não aparece → reescreva obrigatoriamente.
+12. Tem "se eu fosse você", "chance pra isso", "não perca", "clique", "acesse agora"? → reescreva.
+13. Tom é de indicação natural, não de vendedor? Se não → reescreva.
 
 Para o roteiro completo:
 13. O body tem entre 5 e 6 cenas (fora hook e CTA)? Se não → ajuste.
@@ -486,6 +491,22 @@ ${hooksTexto}
 ${ctasDeReferencia && ctasDeReferencia.length > 0
   ? `\n## ESTRUTURAS DE CTA DE REFERÊNCIA\nEsses são os templates do banco de CTAs vencedores selecionados para este foco. Use-os como molduras estruturais para a última cena — adapte ao contexto específico desta marca, produto e à narrativa construída nas cenas anteriores. Não copie literalmente; personalize para que o CTA seja a conclusão natural do roteiro:\n${ctasDeReferencia.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
   : ""}
+${config.oferta ? `
+
+## ⚠️ OFERTA ATIVA — INCLUSÃO OBRIGATÓRIA NO CTA
+Oferta: "${config.oferta}"
+
+REGRA ABSOLUTA: esta oferta DEVE aparecer na última cena (CTA). Sem exceção.
+- Não pode ser ignorada, não pode ser omitida, não pode ser deixada pra outro momento.
+- Posição: após a indicação do site, como informação útil de passagem.
+- Tom: informativo, não pressão. A pessoa conta como quem passa uma dica.
+
+Exemplos de como integrar (adapte ao CTA base do banco):
+- Frete grátis: "...entra no site da ${cliente.nome} e dá uma conferida — ainda tá com frete grátis"
+- Desconto: "...confere no site da ${cliente.nome}, tá com desconto no primeiro pedido"
+- Compre X leve Y: "...entra no site da ${cliente.nome}, tá com promoção de compre X leve Y"
+
+Se o CTA gerado não incluir esta oferta → descarte e reescreva até incluir.` : ""}
 
 Gere o roteiro completo: cena 1 com o hook mais forte, cenas 2 a 6 ou 7 formando o body (mínimo 5, máximo 6 cenas de body), e a última cena com o CTA. Total: 7 a 8 cenas. Honre o tom de voz da marca e as dores/desejos do avatar em cada fala.`;
 }
