@@ -323,6 +323,18 @@ Só entregue o hook se passou em todos os 8. Um reprovado = reescreve o hook int
 
 Entregue apenas o JSON. Sem explicações antes ou depois.`;
 
+const SEMENTES_HOOK = [
+  "PERSPECTIVA DOS HOOKS — TEMPO PERDIDO: os hooks devem evocar a frustração de quanto tempo o avatar desperdiçou tentando sem resultado. O pronome vazio deve apontar para 'o que finalmente mudou depois de tanto tempo'. Ex: 'Passei meses fazendo isso errado sem saber.'",
+  "PERSPECTIVA DOS HOOKS — IMPACTO SOCIAL: os hooks devem evocar uma situação com outras pessoas onde o problema se manifestou (foto que evitou, comentário que ouviu, comparação que fez). O pronome vazio aponta para esse gatilho social específico.",
+  "PERSPECTIVA DOS HOOKS — CONTRADIÇÃO DE CRENÇA: os hooks devem subverter algo que o avatar acreditava estar fazendo certo mas que estava sabotando o resultado. Use estrutura de 'o problema nunca foi X' ou 'eu achava que X era a resposta — estava errada'.",
+  "PERSPECTIVA DOS HOOKS — CETICISMO E SURPRESA: os hooks devem transmitir que o avatar era o último a acreditar nisso. A tensão vem de 'mesmo sendo cética, funcionou'. O pronome vazio aponta para 'o que finalmente fez acreditar'.",
+  "PERSPECTIVA DOS HOOKS — MOMENTO ESPECÍFICO: os hooks devem evocar um instante concreto que precipitou a mudança — uma foto, uma consulta, um número na balança, um comentário de alguém. O pronome vazio aponta para esse gatilho sem nomeá-lo.",
+];
+
+function sortearSementeHook(): string {
+  return SEMENTES_HOOK[Math.floor(Math.random() * SEMENTES_HOOK.length)];
+}
+
 function parseBeneficios(raw: string): string {
   if (!raw) return "—";
   try {
@@ -333,6 +345,7 @@ function parseBeneficios(raw: string): string {
 }
 
 function buildUserPrompt(cliente: Cliente, produto: Produto, config: ConfiguracaoGeracao, hooksDeReferencia?: string[]): string {
+  const sementeHook = sortearSementeHook();
   const anguloSection = config.anguloCentral
     ? `## ÂNGULO CENTRAL — ESPINHA DORSAL DO ROTEIRO (PRIORIDADE MÁXIMA)
 ${config.anguloCentral}
@@ -347,7 +360,14 @@ Este é o único fio condutor. Todas as decisões criativas giram em torno deste
 `
     : "";
 
-  return `${anguloSection}Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:
+  return `${anguloSection}## PERSPECTIVA EMOCIONAL DESTA GERAÇÃO (OBRIGATÓRIA)
+${sementeHook}
+
+Esta perspectiva define o ângulo emocional específico dos 5 hooks. Todos os hooks desta geração devem ser variações desta perspectiva — não repita perspectivas de outras gerações. Se recebeu estruturas de referência do banco, adapte-as a esta perspectiva emocional.
+
+---
+
+Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:
 
 ## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}

@@ -317,6 +317,19 @@ Retorne APENAS um array JSON. Nenhum texto antes ou depois.
 
 Entregue apenas o JSON.`;
 
+const SEMENTES_NARRATIVAS = [
+  "PERSPECTIVA NARRATIVA — ENTRADA POR ROTINA FRUSTRADA: construa o body em torno de tentativas repetidas que não funcionaram. Cena 2: rotina de esforço sem retorno visível. Cena 3: o que especificamente não dava resultado (seja concreto: tempo, método, produto anterior). Cena 4: virada inesperada — algo externo quebrou o ciclo (amiga, vídeo no feed, indicação de profissional).",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR IMPACTO SOCIAL: o problema afetava situações com outras pessoas — fotos, saídas, comentários, interações. Cena 2: uma situação social específica onde o problema apareceu (evitou foto, se sentiu mal comparando, comentário de alguém). Cena 3: o peso emocional disso no dia a dia. Cena 4: o que finalmente fez agir.",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR CETICISMO: o avatar não acreditava em mais nada quando encontrou isso. Cena 2: histórico de soluções que prometiram e decepcionaram. Cena 3: estado de resignação — parou de tentar, aceitou o problema como permanente. Cena 4: o que quebrou essa resistência mesmo contra a vontade.",
+  "PERSPECTIVA NARRATIVA — ENTRADA PELO PIOR MOMENTO: o avatar estava no ponto mais baixo com esse problema quando descobriu. Cena 2: o momento mais difícil — o que aconteceu (uma foto, exame, consulta, comentário). Cena 3: a reação emocional desse momento de fundo (vergonha, frustração, choro, raiva). Cena 4: como encontrou essa solução exatamente nessa fase baixa.",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR DESCOBERTA ACIDENTAL: não estava procurando isso ativamente. Cena 2: o que estava tentando resolver de outra forma quando topou com esse produto. Cena 3: a hesitação inicial — parecia mais do mesmo, não deu muita importância. Cena 4: o que fez arriscar mesmo sem expectativa.",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR TRANSFORMAÇÃO OBSERVADA: viu alguém próximo mudar e quis saber o que estava fazendo. Cena 2: como percebeu a transformação em outra pessoa (mudança visível, comentário de fora). Cena 3: o que sentiu ao observar — curiosidade, comparação, motivação. Cena 4: como perguntou ou descobriu o que era por trás daquela mudança.",
+];
+
+function sortearSementeNarrativa(): string {
+  return SEMENTES_NARRATIVAS[Math.floor(Math.random() * SEMENTES_NARRATIVAS.length)];
+}
+
 function parseBeneficios(raw: string): string {
   if (!raw) return "—";
   try {
@@ -328,6 +341,7 @@ function parseBeneficios(raw: string): string {
 
 function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[]): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
+  const sementeNarrativa = sortearSementeNarrativa();
 
   const anguloSection = config.anguloCentral
     ? `## ÂNGULO CENTRAL — ESPINHA DORSAL DO ROTEIRO (PRIORIDADE MÁXIMA)
@@ -342,7 +356,14 @@ Este ângulo é o fio condutor de TODAS as cenas. Não é só o gancho — é a 
 `
     : "";
 
-  return `${anguloSection}Gere as cenas para o seguinte roteiro UGC:
+  return `${anguloSection}## PERSPECTIVA NARRATIVA DESTA GERAÇÃO (OBRIGATÓRIA)
+${sementeNarrativa}
+
+Esta perspectiva define como as cenas 2, 3 e 4 devem ser construídas. Ela não substitui o ângulo central ou o foco — é a forma como a história de fundo do avatar entra no roteiro. Honre esta perspectiva mesmo que outras gerações tenham usado abordagens diferentes para o mesmo produto.
+
+---
+
+Gere as cenas para o seguinte roteiro UGC:
 
 ## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}
