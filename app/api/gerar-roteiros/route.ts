@@ -80,11 +80,15 @@ Todo hook tem UMA função: fazer o viewer sentir que precisa ver o que vem depo
 - ❌ "Fiz uma troca no café da manhã e meu corpo respondeu diferente." → duas cláusulas com "e", 13 palavras mas estrutura composta.
 - ❌ "Ninguém me falou que dava pra ganhar massa sem abrir mão do pão." → longa, resolve a tensão.
 
-- ✅ "Foi isso aqui que mudou o meu ganho de massa." → 10 palavras. O quê é isso? Preciso ver.
-- ✅ "Esse erro me custou meses de treino sem resultado." → 10 palavras. Que erro? Preciso saber.
-- ✅ "Minha nutricionista me falou uma coisa e eu não queria acreditar." → 12 palavras. O quê ela falou?
-- ✅ "Nunca imaginei que isso aqui ia mudar a minha composição corporal." → 12 palavras. O que é isso?
-- ✅ "O problema nunca foi o carboidrato. Demorei anos pra entender." → 10 palavras. Entender o quê?
+- ✅ "Foi isso aqui que mudou o meu ganho de massa." → 10 palavras. 1 frase. O quê é isso? Preciso ver.
+- ✅ "Esse erro me custou meses de treino sem resultado." → 10 palavras. 1 frase. Que erro? Preciso saber.
+- ✅ "Nunca imaginei que isso aqui ia mudar a minha composição corporal." → 12 palavras. 1 frase. O que é isso?
+- ✅ "Demorei anos pra entender que o problema nunca foi o carboidrato." → 12 palavras. 1 frase. Entender o quê?
+- ✅ "Fiz tudo certo por meses sem entender o que eu tava errando." → 12 palavras. 1 frase. O que estava errando?
+
+❌ EXEMPLOS REPROVADOS — parecem certos mas não são:
+- ❌ "Minha nutricionista me falou uma coisa e eu não queria acreditar." → terceiro personagem + "e" conectando cláusulas. Reprova dois critérios.
+- ❌ "O problema nunca foi o carboidrato. Demorei anos pra entender." → DUAS frases (tem ponto no meio). Reprova imediatamente.
 
 **TÉCNICA DO PRONOME VAZIO:**
 
@@ -95,15 +99,39 @@ Todo hook tem UMA função: fazer o viewer sentir que precisa ver o que vem depo
 
 ---
 
+**LEI DA FRASE ÚNICA — INEGOCIÁVEL:**
+
+**Cada hook = 1 frase. 1 ponto final. No final.**
+
+Se tem ponto final no meio da frase → são duas frases → reprova automática, sem exceção, sem debate.
+
+Não existe "quase uma frase". Existe 1 frase ou 2 frases. Com 2, reescreva do zero.
+
+---
+
+**LEI DO ÂNGULO ESPECÍFICO:**
+
+O hook deve conter o ângulo concreto do roteiro — a dor específica OU o benefício específico. Hooks genéricos demais são reprovados.
+
+- ❌ "Foi isso aqui que mudou tudo." → que tudo? Poderia ser de qualquer produto. Sem ângulo.
+- ❌ "Nunca imaginei que isso aqui ia fazer diferença." → diferença em quê? Sem ângulo.
+- ✅ "Foi isso aqui que destravou o meu ganho de massa." → ângulo claro: massa muscular.
+- ✅ "Esse erro me custou meses de treino sem resultado." → ângulo claro: frustração com treino.
+- ✅ "Demorei anos pra entender que o problema nunca foi o carboidrato." → ângulo claro: dieta e alimentação.
+
+O viewer precisa sentir o tema — não a solução. Qual problema? Qual desejo? Se o hook puder ser de qualquer produto → reescreva com o ângulo concreto.
+
+---
+
 **5 ESTRUTURAS VALIDADAS — use 1 por hook:**
 
-1. **Pronome apontado:** "Foi isso aqui que [resultado específico]." → o que é isso?
-2. **Erro com custo:** "Esse erro aqui me custou [consequência concreta]." → qual erro?
-3. **Revelação retida:** "[Autoridade/pessoa] me falou uma coisa sobre [tema] que mudou tudo." → o quê ela falou?
-4. **Subversão de crença:** "O problema nunca foi [crença comum]. Demorei [tempo] pra entender." → entender o quê?
-5. **Resultado invertido:** "Fiz [ação comum] por [tempo] sem entender o que eu tava errando." → o que estava errando?
+1. **Pronome apontado:** "Foi isso aqui que [resultado específico e concreto]." → o que é isso?
+2. **Erro com custo:** "Esse erro aqui me custou [consequência concreta e específica]." → qual erro?
+3. **Revelação própria:** "Demorei [tempo] pra descobrir uma coisa sobre [área específica] que ninguém fala." → o que descobriu?
+4. **Subversão de crença:** "Demorei [tempo] pra entender que o problema nunca foi [crença comum específica]." → entender o quê?
+5. **Resultado invertido:** "Fiz [ação comum específica] por [tempo] sem entender o que eu tava errando." → o que estava errando?
 
-Cada estrutura = 1 frase. 8-11 palavras idealmente. Pronome vazio obrigatório.
+Cada estrutura = 1 frase. 1 ponto final no final. 8-11 palavras idealmente. Pronome vazio obrigatório. Ângulo específico obrigatório.
 
 ---
 
@@ -112,6 +140,9 @@ Cada estrutura = 1 frase. 8-11 palavras idealmente. Pronome vazio obrigatório.
 - "e" conectando duas cláusulas ("fiz X e aconteceu Y")
 - Revelar o produto, o benefício ou a solução
 - Mais de 13 palavras
+- Ponto final no meio da frase (= duas frases = reprova imediata)
+- Ângulo genérico demais ("mudou tudo", "fez diferença", "foi incrível") sem especificar o quê
+- Terceiro personagem como fonte da informação ("minha nutricionista me falou", "uma amiga me disse", "minha médica recomendou")
 - "Você já…", "Se você quer…", "Descubra como…", "Hoje eu vou…"
 - Frases em terceira pessoa ("Trocou o pão por…")
 - Qualquer saudação
@@ -120,14 +151,16 @@ Cada estrutura = 1 frase. 8-11 palavras idealmente. Pronome vazio obrigatório.
 
 **VALIDAÇÃO OBRIGATÓRIA antes de aceitar cada hook:**
 1. Conta as palavras. Passou de 13? → rejeita e reescreva.
-2. Tem "e" conectando duas cláusulas? → rejeita.
-3. Revela o produto, benefício ou solução? → rejeita.
-4. O viewer consegue saber o que vem depois sem ver o vídeo? → rejeita.
-5. É primeira pessoa? → confirma.
-6. Tem pronome vazio (isso, esse, essa, aqui) apontando pra algo não revelado? → confirma.
-7. Soa como algo que alguém falaria em voz alta numa conversa? → confirma.
+2. Tem ponto final no meio da frase (= duas frases)? → rejeita imediatamente.
+3. Tem "e" conectando duas cláusulas? → rejeita.
+4. Revela o produto, benefício ou solução? → rejeita.
+5. O viewer consegue saber o que vem depois sem ver o vídeo? → rejeita.
+6. É primeira pessoa? → confirma.
+7. Tem pronome vazio (isso, esse, essa, aqui) apontando pra algo não revelado? → confirma.
+8. Contém o ângulo específico do roteiro (dor concreta OU benefício concreto)? Hook genérico → rejeita.
+9. Soa como algo que alguém falaria em voz alta numa conversa? → confirma.
 
-Um hook só passa em TODOS os 7 critérios. Qualquer reprovação = reescreva do zero.
+Um hook só passa em TODOS os 9 critérios. Qualquer reprovação = reescreva do zero.
 
 ### 2. Cenas curtas, transições fortes
 - Cada cena = 1 ideia, máximo 2 frases
