@@ -12,9 +12,11 @@ import {
   Produto, Roteiro, FOCO_LABELS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
-import { ChevronDown, Lock, Loader2, Wand2 } from "lucide-react";
+import { ChevronDown, Lock, Loader2, Wand2, RotateCcw } from "lucide-react";
 import { SEED_HOOKS, STORAGE_HOOKS } from "@/lib/hooks-seed";
 import { SEED_CTAS, STORAGE_CTAS } from "@/lib/ctas-seed";
+
+const GERAR_SESSION_KEY = "ugc:gerar:session";
 
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
@@ -179,15 +181,54 @@ function GerarPageInner() {
     setClientes(todos);
     const clienteIdParam = searchParams.get("clienteId") || "";
     const produtoIdParam = searchParams.get("produtoId") || "";
+
     if (clienteIdParam) {
+      // URL params têm prioridade — navegação vinda de outra tela
       dispatch({ type: "SET_CAMPO", campo: "clienteId", valor: clienteIdParam });
       const prods = getProdutosByCliente(clienteIdParam);
       setProdutos(prods);
       if (produtoIdParam) {
         dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: produtoIdParam });
       }
+    } else {
+      // Sem URL params — tenta restaurar sessão anterior
+      try {
+        const saved = sessionStorage.getItem(GERAR_SESSION_KEY);
+        if (saved) {
+          const session = JSON.parse(saved);
+          if (session.estado) {
+            (Object.keys(session.estado) as (keyof Estado)[]).forEach((campo) => {
+              dispatch({ type: "SET_CAMPO", campo, valor: session.estado[campo] });
+            });
+            if (session.estado.clienteId) {
+              setProdutos(getProdutosByCliente(session.estado.clienteId));
+              setAvatares(getAvataresByCliente(session.estado.clienteId));
+            }
+            if (session.estado.produtoId) {
+              const prod = getProdutoById(session.estado.produtoId);
+              if (prod) {
+                setBeneficiosTags(parseTags(prod.guia.beneficios));
+                setDoresTags(parseTags(prod.guia.doresQueResolve));
+              }
+            }
+          }
+          if (session.roteiros?.length) setRoteiros(session.roteiros);
+          if (session.cenesGeradas) setCenesGeradas(session.cenesGeradas);
+          if (session.angulosSelecionados) setAngulosSelecionados(session.angulosSelecionados);
+          if (session.avatarSelecionadoId) setAvatarSelecionadoId(session.avatarSelecionadoId);
+        }
+      } catch { /* sessionStorage indisponível ou dado corrompido */ }
     }
   }, [searchParams]);
+
+  // Persiste sessão sempre que estado relevante muda
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(GERAR_SESSION_KEY, JSON.stringify({
+        estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId,
+      }));
+    } catch { /* ignore */ }
+  }, [estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId]);
 
   function handleClienteChange(clienteId: string) {
     if (!clienteId) return;
@@ -231,6 +272,21 @@ function GerarPageInner() {
     setAngulosSelecionados(prev =>
       prev.includes(tag) ? prev.filter(a => a !== tag) : [...prev, tag]
     );
+  }
+
+  function handleNovoRoteiro() {
+    try { sessionStorage.removeItem(GERAR_SESSION_KEY); } catch { /* ignore */ }
+    (Object.keys(ESTADO_INICIAL) as (keyof Estado)[]).forEach((campo) => {
+      dispatch({ type: "SET_CAMPO", campo, valor: ESTADO_INICIAL[campo] });
+    });
+    setRoteiros([]);
+    setCenesGeradas({});
+    setAngulosSelecionados([]);
+    setAvatarSelecionadoId("");
+    setProdutos([]);
+    setAvatares([]);
+    setDoresTags([]);
+    setBeneficiosTags([]);
   }
 
   async function handleGerar() {
@@ -448,7 +504,18 @@ function GerarPageInner() {
         {/* Painel de configuração */}
         <div className="space-y-4">
           <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-5 shadow-sm">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Configuração</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Configuração</h2>
+              {(roteiros.length > 0 || estado.clienteId) && (
+                <button
+                  onClick={handleNovoRoteiro}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors"
+                >
+                  <RotateCcw size={12} />
+                  Novo roteiro
+                </button>
+              )}
+            </div>
 
             {/* Cliente */}
             <div className="space-y-2">
