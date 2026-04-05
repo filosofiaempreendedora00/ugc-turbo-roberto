@@ -27,11 +27,20 @@ Um roteiro completo com esta estrutura exata:
 
   **LEI DO TAMANHO — INEGOCIÁVEL:**
   - **Máximo 2 frases. Máximo 15 palavras no total. Conte antes de aceitar.**
-  - 1 frase é o ideal. 2 frases só se a segunda for curtíssima (3-5 palavras).
+  - 1 frase é o ideal. 2 frases só quando a segunda é a continuação natural e necessária da primeira.
   - 3 frases = reprovado automaticamente. Reescreva do zero.
   - Passou de 15 palavras = reprovado. Corte até caber.
 
-  As frases devem fluir como uma ideia sendo completada, não como uma lista de informações.
+  **LEI DA CONECTIVIDADE — quando há 2 frases:**
+  A segunda frase deve completar, intensificar ou concretizar a primeira. Nunca é um pensamento novo, nunca é um comentário vago sobre a própria situação, nunca é padding.
+
+  ❌ "Apareceu um vídeo no meu feed e eu fui pesquisar. Não esperava nada." → segunda frase vazia, não acrescenta informação nem emoção concreta. Reprova.
+  ❌ "Resolvi tentar uma última vez. Fui sem muita esperança." → redundante, artificial, ninguém fala assim. Reprova.
+  ❌ "Fui no site e olhei sobre o produto. Parecia interessante." → "parecia interessante" não diz nada. Reprova.
+  ✅ "Eu tentei várias dietas e nunca conseguia manter. Sempre voltava pra estaca zero." → segunda concretiza com especificidade o que a primeira anuncia.
+  ✅ "Na primeira vez fiquei chocada. Saiu um pãozinho fofo que não parece dieta nenhuma." → segunda entrega o detalhe sensorial que justifica o espanto.
+
+  Se a segunda frase puder ser removida sem perder nada → remova.
 
 - **briefingFilmagem**: instrução técnica direta (ângulo, expressão, gesto, o que mostrar na tela). Máximo 2 linhas.
 
@@ -86,12 +95,14 @@ Essa cena cria suspense e transição natural para a descoberta. O viewer já qu
 
 **PROIBIDO: a virada NÃO pode depender de terceiro personagem (amiga, nutricionista, médica, mãe, marido) como fonte ou motor da descoberta.** A virada é sempre da própria creator — ela pesquisou, ela encontrou, ela decidiu tentar. Terceiros não existem nesta cena.
 
+**ATENÇÃO CRÍTICA:** a cena 4 NÃO pode criar uma impressão negativa sobre o produto que será nomeado na cena 5. Se a virada descreve o produto como "mais uma coisa suspeita", "coisa da internet", "parecia golpe" etc., o viewer chegará na cena 5 com um preconceito negativo que o roteiro criou — e associará o produto a essa desconfiança. A virada deve gerar curiosidade positiva ou neutra, nunca ceticismo em relação ao que será apresentado.
+
 Exemplos de virada orgânica (1 frase, primeira pessoa):
-- "Apareceu um vídeo no meu feed e eu parei pra assistir, sem querer."
+- "Apareceu um vídeo no meu feed e eu fui pesquisar."
 - "Resolvi pesquisar de verdade o que eu tava fazendo de errado."
-- "Eu mesma fui atrás, sem expectativa nenhuma, só pra tentar uma última vez."
+- "Eu mesma fui atrás, decidida a tentar de um ângulo diferente."
 - "Tava scrollando e parei num vídeo — aquilo ficou na minha cabeça."
-- "Decidi que ia tentar diferente, sem seguir o que todo mundo recomendava."
+- "Decidi que ia tentar diferente do que eu sempre fazia."
 
 ---
 
@@ -195,6 +206,39 @@ Se uma cena não cumpre nenhuma dessas funções, ela não tem razão de existir
 
 ---
 
+**BENEFÍCIOS SECUNDÁRIOS — pincelar, não listar:**
+
+O ângulo central é a espinha dorsal e aparece em todos os hooks. Mas ao longo do body — especialmente nas cenas de experiência de uso e resultado — pincele 1 a 2 outros benefícios do produto de forma natural, como observações que emergem da experiência, não como features anunciadas.
+
+Não diga: "além de X, ele também tem Y e Z" — isso é lista de anúncio.
+Deixe emergir da narrativa: o benefício secundário aparece como uma percepção genuína, quase de surpresa.
+
+✅ Exemplo — ângulo principal: ganho de massa. Benefício secundário (praticidade) emergindo na cena 6:
+"Jogo um scoop com ovo, 90 segundos na frigideira, e tá pronto. Encaixa em qualquer rotina."
+→ A praticidade não foi anunciada — a creator mostrou, e o viewer concluiu sozinho.
+
+✅ Exemplo — ângulo principal: energia. Benefício secundário (saciedade) emergindo na cena 7:
+"O que eu mais estranhei foi não ter fome no meio da tarde. Isso nunca tinha acontecido antes."
+→ Saciedade veio como surpresa descoberta, não como feature listada.
+
+O viewer deve sentir que o produto é mais completo do que esperava — sem perceber que está recebendo uma apresentação de benefícios.
+
+---
+
+**COERÊNCIA SEMÂNTICA DO ÂNGULO — use as métricas certas:**
+
+O resultado descrito nas cenas deve ser coerente com o ângulo central. Cada benefício tem seus próprios sinais observáveis — usar as métricas erradas confunde o viewer sobre o que o produto faz.
+
+- **Ganho de massa / definição muscular** → espelho, shape, roupas que mudaram de caimento, força percebida, músculo visível. **NUNCA balança** — balança é métrica de emagrecimento, não de composição.
+- **Emagrecimento / perda de gordura** → balança, medidas, roupas mais largas, cintura.
+- **Energia / disposição** → como se sentiu ao acordar, rendimento no treino, tarde sem sono, foco.
+- **Pele / beleza** → textura, brilho, manchas, uniformidade — o que ela vê no espelho ou percebe na sensação.
+- **Saúde / imunidade** → frequência de problemas, exames, como o corpo respondeu.
+
+Se o ângulo é ganho de massa e o roteiro menciona balança como resultado → reprova. Reescreva com a métrica coerente.
+
+---
+
 ## STORYTELLING — A ALMA DO ROTEIRO
 
 O roteiro não é uma lista de benefícios. É uma história com arco emocional completo:
@@ -276,6 +320,7 @@ NUNCA use palavras que ninguém fala no dia a dia:
 - Enumeração explícita: "3 benefícios", "2 razões", "primeiro", "segundo"
 - Terceira pessoa pra se referir ao criador
 - Terceiro personagem como motor narrativo: "uma amiga me falou", "minha nutricionista recomendou", "minha médica disse", "minha mãe perguntou" — qualquer uso de terceiro que seja a razão pela qual a creator descobriu, confiou ou comprou o produto
+- Frases de enchimento sem conteúdo real como segunda frase: "Não esperava nada.", "Fui sem muita esperança.", "Parecia interessante.", "Resolvi tentar assim mesmo.", "Foi diferente." — se a segunda frase não acrescenta informação concreta ou emoção específica, ela não existe
 
 ---
 
@@ -320,22 +365,27 @@ Para cada cena do body, execute em ordem:
 
 1. **Conte as palavras da fala.** Passou de 15? → corte e reescreva.
 2. **Conte as frases.** Tem 3 ou mais? → reescreva do zero.
-3. **Se tem 2 frases:** a segunda tem mais de 5 palavras? → junte ou corte.
+3. **Se tem 2 frases:** a segunda acrescenta informação concreta ou emoção específica? Se é vaga ou redundante ("Não esperava nada.", "Parecia interessante.", "Fui assim mesmo.") → remova ou reescreva.
 4. **A fala tem construção solta ou vaga** ("cortei coisa, incluí coisa", "tentei isso e aquilo")? → reescreva com especificidade.
 5. **Algum detalhe (número, dado, nome) já apareceu em cena anterior?** → remova ou substitua.
 6. **Tem palavra técnica que ninguém fala no dia a dia?** → troque por linguagem comum.
 7. **Soa como alguém falando ao vivo?** Se parece texto escrito → reescreva.
 
+Para o body como bloco:
+8. **A cena 4 (virada) cria framing negativo sobre o produto?** Ex: "parecia mais uma coisa suspeita", "pensei que era golpe". → reescreva para gerar curiosidade positiva ou neutra.
+9. **O roteiro pincela 1-2 benefícios secundários ao longo das cenas de experiência/resultado?** Se está limitado só ao ângulo principal sem nenhuma textura adicional → adicione de forma natural.
+10. **A métrica de resultado é coerente com o ângulo central?** Ganho de massa → espelho/shape, não balança. → Se incoerente, reescreva.
+
 Para o CTA:
-8. Tem "se eu fosse você", "chance pra isso", "não perca", "clique", "acesse agora"? → reescreva.
-9. Tom é de indicação natural, não de vendedor? Se não → reescreva.
+11. Tem "se eu fosse você", "chance pra isso", "não perca", "clique", "acesse agora"? → reescreva.
+12. Tom é de indicação natural, não de vendedor? Se não → reescreva.
 
 Para o roteiro completo:
-10. O body tem entre 5 e 6 cenas (fora hook e CTA)? Se não → ajuste.
-11. A cena 2 funciona como ponte universal para QUALQUER um dos 5 hooks? Se não → reescreva.
-12. O arco AIDA está completo? (Identificação → Amplificação → Virada → Produto → Experiência → Resultado → CTA)
+13. O body tem entre 5 e 6 cenas (fora hook e CTA)? Se não → ajuste.
+14. A cena 2 funciona como ponte universal para QUALQUER um dos 5 hooks? Se não → reescreva.
+15. O arco AIDA está completo? (Identificação → Amplificação → Virada → Produto → Experiência → Resultado → CTA)
 
-Só entregue se passou em todos os 12 pontos.
+Só entregue se passou em todos os 15 pontos.
 
 Se qualquer resposta for não → corrija antes de entregar.
 
@@ -358,9 +408,9 @@ Retorne APENAS um array JSON. Nenhum texto antes ou depois.
 Entregue apenas o JSON.`;
 
 const SEMENTES_NARRATIVAS = [
-  "PERSPECTIVA NARRATIVA — ENTRADA POR ROTINA FRUSTRADA: construa o body em torno de tentativas repetidas que não funcionaram. Cena 2: rotina de esforço sem retorno visível. Cena 3: o que especificamente não dava resultado (seja concreto: tempo, método, produto anterior). Cena 4: virada inesperada — algo externo quebrou o ciclo (amiga, vídeo no feed, indicação de profissional).",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR ROTINA FRUSTRADA: construa o body em torno de tentativas repetidas que não funcionaram. Cena 2: rotina de esforço sem retorno visível. Cena 3: o que especificamente não dava resultado (seja concreto: tempo, método, produto anterior). Cena 4: virada orgânica — a própria creator decidiu pesquisar diferente ou topou com algo no feed que gerou curiosidade positiva.",
   "PERSPECTIVA NARRATIVA — ENTRADA POR IMPACTO SOCIAL: o problema afetava situações com outras pessoas — fotos, saídas, comentários, interações. Cena 2: uma situação social específica onde o problema apareceu (evitou foto, se sentiu mal comparando, comentário de alguém). Cena 3: o peso emocional disso no dia a dia. Cena 4: o que finalmente fez agir.",
-  "PERSPECTIVA NARRATIVA — ENTRADA POR CETICISMO: o avatar não acreditava em mais nada quando encontrou isso. Cena 2: histórico de soluções que prometiram e decepcionaram. Cena 3: estado de resignação — parou de tentar, aceitou o problema como permanente. Cena 4: o que quebrou essa resistência mesmo contra a vontade.",
+  "PERSPECTIVA NARRATIVA — ENTRADA POR CETICISMO: o avatar não acreditava em mais nada quando encontrou isso. Cena 2: histórico de soluções que prometiram e decepcionaram. Cena 3: estado de resignação — parou de tentar, aceitou o problema como permanente. Cena 4: o que quebrou essa resistência — uma pesquisa própria, um vídeo no feed, uma decisão de tentar de um ângulo nunca tentado. ATENÇÃO: a virada não pode criar framing negativo sobre o produto que será revelado na cena 5.",
   "PERSPECTIVA NARRATIVA — ENTRADA PELO PIOR MOMENTO: o avatar estava no ponto mais baixo com esse problema quando descobriu. Cena 2: o momento mais difícil — o que aconteceu (uma foto, exame, consulta, comentário). Cena 3: a reação emocional desse momento de fundo (vergonha, frustração, choro, raiva). Cena 4: como encontrou essa solução exatamente nessa fase baixa.",
   "PERSPECTIVA NARRATIVA — ENTRADA POR DESCOBERTA ACIDENTAL: não estava procurando isso ativamente. Cena 2: o que estava tentando resolver de outra forma quando topou com esse produto. Cena 3: a hesitação inicial — parecia mais do mesmo, não deu muita importância. Cena 4: o que fez arriscar mesmo sem expectativa.",
   "PERSPECTIVA NARRATIVA — ENTRADA PELO CICLO SEM FIM: o avatar tentava, parava, voltava ao início, tentava de novo. Cena 2: a rotina cansativa de tentar e não manter — ciclo de esforço e abandono. Cena 3: o ponto de esgotamento, quando chegou a conclusão de que talvez o problema fosse diferente do que imaginava. Cena 4: a decisão de pesquisar por conta própria de um ângulo que nunca tinha tentado.",
