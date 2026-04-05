@@ -807,19 +807,6 @@ function GerarPageInner() {
               )}
             </div>
 
-            {/* Direcionamento adicional */}
-            <div className="space-y-2">
-              <Label className="text-gray-700 text-xs">
-                Direcionamento adicional <span className="text-gray-400 font-normal">(opcional)</span>
-              </Label>
-              <Input
-                placeholder="Ex: Mencionar o frete grátis no final"
-                className="border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm"
-                value={estado.mensagemObrigatoria}
-                onChange={(e) => dispatch({ type: "SET_CAMPO", campo: "mensagemObrigatoria", valor: e.target.value })}
-              />
-            </div>
-
           </div>
 
           <Button
@@ -852,7 +839,6 @@ function GerarPageInner() {
               <ResumoLinha label="Foco" valor={estado.foco ? FOCO_LABELS[estado.foco as FocoRoteiro] : undefined} />
               <ResumoLinha label="Ângulo central" valor={angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined} />
               <ResumoLinha label="Oferta" valor={computeOferta(estado) || undefined} />
-              <ResumoLinha label="Direcionamento" valor={estado.mensagemObrigatoria || undefined} />
             </div>
           </div>
         </div>

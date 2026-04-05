@@ -8,6 +8,7 @@ import {
   Check, ClipboardCopy, Loader2,
   RefreshCw, Wand2, Zap, Film, Megaphone, Copy, Lock, Unlock,
 } from "lucide-react";
+// Lock e Unlock mantidos para os hooks
 
 interface RoteiroTableProps {
   roteiros: Roteiro[];
@@ -187,8 +188,14 @@ function FeedbackSection({
 }) {
   const [value, setValue] = useState("");
   const [placeholder, setPlaceholder] = useState("");
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
+    if (focused) {
+      setPlaceholder("");
+      return;
+    }
+
     let idx = 0;
     let pos = 0;
     let deleting = false;
@@ -201,7 +208,7 @@ function FeedbackSection({
         setPlaceholder(str.slice(0, pos));
         if (pos === str.length) {
           deleting = true;
-          tid = setTimeout(tick, 2200);
+          tid = setTimeout(tick, 8000);
           return;
         }
         tid = setTimeout(tick, 32);
@@ -220,7 +227,7 @@ function FeedbackSection({
 
     tid = setTimeout(tick, 900);
     return () => clearTimeout(tid);
-  }, []);
+  }, [focused]);
 
   return (
     <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4">
@@ -233,7 +240,9 @@ function FeedbackSection({
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          className="w-full text-sm text-gray-800 leading-relaxed rounded-lg px-3 py-2.5 border border-dashed border-gray-200 bg-white hover:border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent placeholder:text-gray-300 resize-none"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="w-full text-sm text-gray-800 leading-relaxed rounded-lg px-3 py-2.5 border border-dashed border-gray-200 bg-white hover:border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent placeholder:text-gray-500 resize-none"
         />
         <div className="flex items-center justify-between gap-4">
           <p className="text-[11px] text-gray-400 leading-relaxed">
@@ -273,8 +282,6 @@ export function RoteiroTable({
 
   // Lock states
   const [lockedHooks, setLockedHooks] = useState<Set<number>>(new Set());
-  const [lockedCenas, setLockedCenas] = useState<Set<number>>(new Set());
-  const [ctaLocked, setCtaLocked] = useState(false);
 
   // Favoritos (hooks selecionados para copiar, máx 3)
   const [selectedHooks, setSelectedHooks] = useState<Set<number>>(new Set());
@@ -297,8 +304,6 @@ export function RoteiroTable({
   // Reset locks e seleção quando novo roteiro é gerado (ID muda)
   useEffect(() => {
     setLockedHooks(new Set());
-    setLockedCenas(new Set());
-    setCtaLocked(false);
     setSelectedHooks(new Set());
   }, [roteiros[0]?.id]); // eslint-disable-line
 
@@ -352,23 +357,6 @@ export function RoteiroTable({
     }
   }
 
-  function toggleCenaLock(cenaNum: number) {
-    setLockedCenas((prev) => {
-      const next = new Set(prev);
-      if (next.has(cenaNum)) next.delete(cenaNum);
-      else next.add(cenaNum);
-      return next;
-    });
-  }
-
-  function toggleAllCenasLock() {
-    if (lockedCenas.size === bodyCenas.length) {
-      setLockedCenas(new Set());
-    } else {
-      setLockedCenas(new Set(bodyCenas.map((c) => c.cena)));
-    }
-  }
-
   // ── Computed for callbacks ────────────────────────────────────────────────────
 
   function getLockedHooksData(): { index: number; text: string }[] {
@@ -378,14 +366,8 @@ export function RoteiroTable({
     }));
   }
 
-  function getLockedCenasData(): CenaRoteiro[] {
-    return bodyCenas
-      .filter((c) => lockedCenas.has(c.cena))
-      .map((c) => ({ ...c, fala: editedCenas[c.cena] ?? c.fala }));
-  }
-
-  function getLockedCtaData(): CenaRoteiro | undefined {
-    if (!ctaLocked || !ctaCena) return undefined;
+  function getCurrentCtaLocked(): CenaRoteiro | undefined {
+    if (!ctaCena) return undefined;
     return { ...ctaCena, fala: editedCtaFala || ctaCena.fala };
   }
 
@@ -396,14 +378,6 @@ export function RoteiroTable({
     lockedHooks.size === 0 ? "none"
     : lockedHooks.size === totalHooks ? "all"
     : "some";
-
-  const bodyLockState: "none" | "some" | "all" =
-    bodyCenas.length === 0 ? "none"
-    : lockedCenas.size === 0 ? "none"
-    : lockedCenas.size === bodyCenas.length ? "all"
-    : "some";
-
-  const ctaLockState: "none" | "all" = ctaLocked ? "all" : "none";
 
   // ── Edit handlers ─────────────────────────────────────────────────────────────
 
@@ -582,16 +556,9 @@ export function RoteiroTable({
           label="Body"
           icon={<Film size={15} />}
           color="slate"
-          lockState={bodyLockState}
-          onLockToggle={bodyCenas.length > 0 ? toggleAllCenasLock : undefined}
           onRegenerate={
             cenas
-              ? () =>
-                  onRegenerateCenas(
-                    getLockedCenasData(),
-                    true,
-                    getLockedCtaData() ?? ctaCena ?? undefined
-                  )
+              ? () => onRegenerateCenas([], true, getCurrentCtaLocked())
               : undefined
           }
           loading={loadingCenas || false}
@@ -610,7 +577,6 @@ export function RoteiroTable({
                   <tr className="border-b border-gray-100 bg-gray-50/50">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
-                    <th className="w-10" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -623,7 +589,7 @@ export function RoteiroTable({
                       </td>
                       <td className="px-4 py-3 align-top">
                         <textarea
-                          ref={(el) => { cenaRefs.current[cena.cena] = el; }}
+                          ref={(el) => { cenaRefs.current[cena.cena] = el; if (el) autoResize(el); }}
                           value={editedCenas[cena.cena] ?? cena.fala}
                           onChange={(e) => {
                             setEditedCenas((prev) => ({ ...prev, [cena.cena]: e.target.value }));
@@ -631,21 +597,8 @@ export function RoteiroTable({
                           }}
                           onFocus={(e) => autoResize(e.target)}
                           rows={1}
-                          className={`${editableBase} ${focusColors.slate} ${lockedCenas.has(cena.cena) ? lockedStyle : ""}`}
+                          className={`${editableBase} ${focusColors.slate}`}
                         />
-                      </td>
-                      <td className="px-2 py-4 align-top w-10">
-                        <button
-                          onClick={() => toggleCenaLock(cena.cena)}
-                          className={`p-1.5 rounded-lg transition-all ${
-                            lockedCenas.has(cena.cena)
-                              ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
-                              : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
-                          }`}
-                          title={lockedCenas.has(cena.cena) ? "Desbloquear" : "Travar esta cena"}
-                        >
-                          {lockedCenas.has(cena.cena) ? <Lock size={13} /> : <Unlock size={13} />}
-                        </button>
                       </td>
                     </tr>
                   ))}
@@ -654,12 +607,7 @@ export function RoteiroTable({
             </div>
             <FeedbackSection
               onSubmit={(feedback) =>
-                onRegenerateCenas(
-                  getLockedCenasData(),
-                  true,
-                  getLockedCtaData() ?? ctaCena ?? undefined,
-                  feedback
-                )
+                onRegenerateCenas([], true, getCurrentCtaLocked(), feedback)
               }
               loading={loadingCenas}
             />
@@ -679,8 +627,6 @@ export function RoteiroTable({
           label="CTA"
           icon={<Megaphone size={15} />}
           color="emerald"
-          lockState={ctaLockState}
-          onLockToggle={ctaCena ? () => setCtaLocked((v) => !v) : undefined}
           onRegenerate={
             cenas
               ? () =>
@@ -700,31 +646,18 @@ export function RoteiroTable({
             <span>Gerando CTA...</span>
           </div>
         ) : ctaCena ? (
-          <div className="p-5 space-y-2">
-            <div className="flex gap-2 items-start">
-              <textarea
-                ref={ctaRef}
-                value={editedCtaFala || ctaCena.fala}
-                onChange={(e) => {
-                  setEditedCtaFala(e.target.value);
-                  autoResize(e.target);
-                }}
-                onFocus={(e) => autoResize(e.target)}
-                rows={1}
-                className={`flex-1 ${editableBase} ${focusColors.emerald} ${ctaLocked ? lockedStyle : ""}`}
-              />
-              <button
-                onClick={() => setCtaLocked((v) => !v)}
-                className={`p-1.5 rounded-lg transition-all shrink-0 mt-1 ${
-                  ctaLocked
-                    ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
-                    : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
-                }`}
-                title={ctaLocked ? "Desbloquear" : "Travar CTA"}
-              >
-                {ctaLocked ? <Lock size={13} /> : <Unlock size={13} />}
-              </button>
-            </div>
+          <div className="p-5">
+            <textarea
+              ref={(el) => { ctaRef.current = el; if (el) autoResize(el); }}
+              value={editedCtaFala || ctaCena.fala}
+              onChange={(e) => {
+                setEditedCtaFala(e.target.value);
+                autoResize(e.target);
+              }}
+              onFocus={(e) => autoResize(e.target)}
+              rows={1}
+              className={`w-full ${editableBase} ${focusColors.emerald}`}
+            />
           </div>
         ) : (
           <div className="px-5 py-6 text-sm text-gray-400 italic">
