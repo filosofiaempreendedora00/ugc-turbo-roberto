@@ -427,7 +427,7 @@ function GerarPageInner() {
     }
   }
 
-  async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro) {
+  async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string) {
     const roteiro = roteiros[0];
     if (!roteiro) return;
     const cliente = getClienteById(estado.clienteId);
@@ -452,6 +452,7 @@ function GerarPageInner() {
           },
           roteiro,
           ctasDeReferencia: selecionarCtasDeReferencia(roteiro.foco),
+          feedback,
         }),
       });
       const data = await res.json();

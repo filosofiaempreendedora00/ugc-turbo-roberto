@@ -12,7 +12,7 @@ import {
 interface RoteiroTableProps {
   roteiros: Roteiro[];
   onRegenerateHooks: (locked: { index: number; text: string }[]) => void;
-  onRegenerateCenas: (lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro) => void;
+  onRegenerateCenas: (lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string) => void;
   onGerarNovo: () => void;
   hooksLoading?: boolean;
   cenesGeradas: { [id: string]: CenaRoteiro[] };
@@ -167,6 +167,93 @@ const focusColors = {
 };
 
 const lockedStyle = "border-amber-200 bg-amber-50/50 hover:border-amber-300 hover:bg-amber-50/70";
+
+// ── Feedback examples para o typewriter ───────────────────────────────────────
+
+const FEEDBACK_EXAMPLES = [
+  "Gostei de forma geral, mas achei que as cenas 6 e 7 ficaram muito repetitivas com o roteiro anterior",
+  "Achei o tom de voz muito formal. Gostaria de mais naturalidade",
+  "Achei que passou do limite tocando na dor. Ficou um pouco agressivo e forçado demais",
+  "Penso que poderia ter destacado mais os benefícios. Achei a copy em geral pouco persuasiva",
+  "Senti um pouco de falta de conexão entre as ideias. Gostaria que as cenas fossem conectadas de forma mais fluida",
+];
+
+function FeedbackSection({
+  onSubmit,
+  loading,
+}: {
+  onSubmit: (feedback: string) => void;
+  loading: boolean;
+}) {
+  const [value, setValue] = useState("");
+  const [placeholder, setPlaceholder] = useState("");
+
+  useEffect(() => {
+    let idx = 0;
+    let pos = 0;
+    let deleting = false;
+    let tid: ReturnType<typeof setTimeout>;
+
+    function tick() {
+      const str = FEEDBACK_EXAMPLES[idx];
+      if (!deleting) {
+        pos++;
+        setPlaceholder(str.slice(0, pos));
+        if (pos === str.length) {
+          deleting = true;
+          tid = setTimeout(tick, 2200);
+          return;
+        }
+        tid = setTimeout(tick, 32);
+      } else {
+        pos--;
+        setPlaceholder(str.slice(0, pos));
+        if (pos === 0) {
+          deleting = false;
+          idx = (idx + 1) % FEEDBACK_EXAMPLES.length;
+          tid = setTimeout(tick, 400);
+          return;
+        }
+        tid = setTimeout(tick, 16);
+      }
+    }
+
+    tid = setTimeout(tick, 900);
+    return () => clearTimeout(tid);
+  }, []);
+
+  return (
+    <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4">
+      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        Feedback para regenerar o body
+      </p>
+      <div className="space-y-2.5">
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className="w-full text-sm text-gray-800 leading-relaxed rounded-lg px-3 py-2.5 border border-dashed border-gray-200 bg-white hover:border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent placeholder:text-gray-300 resize-none"
+        />
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            Hooks e CTA serão mantidos. Apenas o body será regerado com base no seu feedback.
+          </p>
+          <button
+            onClick={() => { if (value.trim()) { onSubmit(value.trim()); setValue(""); } }}
+            disabled={!value.trim() || loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-white hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+          >
+            {loading
+              ? <><Loader2 size={12} className="animate-spin" />Regenerando...</>
+              : <><RefreshCw size={12} />Regenerar body</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function RoteiroTable({
   roteiros,
@@ -516,54 +603,67 @@ export function RoteiroTable({
             <span>Gerando cenas...</span>
           </div>
         ) : bodyCenas.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {bodyCenas.map((cena) => (
-                  <tr key={cena.cena} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-4 align-top">
-                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
-                        <span className="text-xs font-bold text-slate-500">{cena.cena}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <textarea
-                        ref={(el) => { cenaRefs.current[cena.cena] = el; }}
-                        value={editedCenas[cena.cena] ?? cena.fala}
-                        onChange={(e) => {
-                          setEditedCenas((prev) => ({ ...prev, [cena.cena]: e.target.value }));
-                          autoResize(e.target);
-                        }}
-                        onFocus={(e) => autoResize(e.target)}
-                        rows={1}
-                        className={`${editableBase} ${focusColors.slate} ${lockedCenas.has(cena.cena) ? lockedStyle : ""}`}
-                      />
-                    </td>
-                    <td className="px-2 py-4 align-top w-10">
-                      <button
-                        onClick={() => toggleCenaLock(cena.cena)}
-                        className={`p-1.5 rounded-lg transition-all ${
-                          lockedCenas.has(cena.cena)
-                            ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
-                            : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
-                        }`}
-                        title={lockedCenas.has(cena.cena) ? "Desbloquear" : "Travar esta cena"}
-                      >
-                        {lockedCenas.has(cena.cena) ? <Lock size={13} /> : <Unlock size={13} />}
-                      </button>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">Cena</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fala</th>
+                    <th className="w-10" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {bodyCenas.map((cena) => (
+                    <tr key={cena.cena} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-4 align-top">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+                          <span className="text-xs font-bold text-slate-500">{cena.cena}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <textarea
+                          ref={(el) => { cenaRefs.current[cena.cena] = el; }}
+                          value={editedCenas[cena.cena] ?? cena.fala}
+                          onChange={(e) => {
+                            setEditedCenas((prev) => ({ ...prev, [cena.cena]: e.target.value }));
+                            autoResize(e.target);
+                          }}
+                          onFocus={(e) => autoResize(e.target)}
+                          rows={1}
+                          className={`${editableBase} ${focusColors.slate} ${lockedCenas.has(cena.cena) ? lockedStyle : ""}`}
+                        />
+                      </td>
+                      <td className="px-2 py-4 align-top w-10">
+                        <button
+                          onClick={() => toggleCenaLock(cena.cena)}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            lockedCenas.has(cena.cena)
+                              ? "text-amber-500 bg-amber-50 hover:bg-amber-100"
+                              : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+                          }`}
+                          title={lockedCenas.has(cena.cena) ? "Desbloquear" : "Travar esta cena"}
+                        >
+                          {lockedCenas.has(cena.cena) ? <Lock size={13} /> : <Unlock size={13} />}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <FeedbackSection
+              onSubmit={(feedback) =>
+                onRegenerateCenas(
+                  getLockedCenasData(),
+                  true,
+                  getLockedCtaData() ?? ctaCena ?? undefined,
+                  feedback
+                )
+              }
+              loading={loadingCenas}
+            />
+          </>
         ) : (
           <div className="px-5 py-6 text-sm text-gray-400 italic">
             Cenas serão exibidas após a geração.

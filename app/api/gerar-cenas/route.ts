@@ -434,7 +434,7 @@ function parseBeneficios(raw: string): string {
   return raw;
 }
 
-function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[]): string {
+function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[], feedback?: string): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
   const sementeNarrativa = sortearSementeNarrativa();
 
@@ -508,17 +508,27 @@ Exemplos de como integrar (adapte ao CTA base do banco):
 
 Se o CTA gerado não incluir esta oferta → descarte e reescreva até incluir.` : ""}
 
+${feedback ? `
+## FEEDBACK DO USUÁRIO SOBRE O BODY ANTERIOR — PRIORIDADE MÁXIMA
+"${feedback}"
+
+Este feedback descreve o que o usuário não gostou no body gerado anteriormente. O novo body DEVE incorporar este feedback de forma direta e específica. Não ignore, não suavize — aplique o ajuste pedido em cada cena que o feedback afeta.
+- O hook (cena 1) já está definido e NÃO deve ser alterado.
+- O CTA (última cena) já está definido e NÃO deve ser alterado.
+- Apenas o body (cenas intermediárias) deve ser regenerado, considerando este feedback.
+` : ""}
 Gere o roteiro completo: cena 1 com o hook mais forte, cenas 2 a 6 ou 7 formando o body (mínimo 5, máximo 6 cenas de body), e a última cena com o CTA. Total: 7 a 8 cenas. Honre o tom de voz da marca e as dores/desejos do avatar em cada fala.`;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { cliente, produto, config, roteiro, ctasDeReferencia } = await request.json() as {
+    const { cliente, produto, config, roteiro, ctasDeReferencia, feedback } = await request.json() as {
       cliente: Cliente;
       produto: Produto;
       config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">;
       roteiro: Roteiro;
       ctasDeReferencia?: string[];
+      feedback?: string;
     };
 
     if (!cliente || !produto || !config || !roteiro) {
@@ -529,7 +539,7 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia) }],
+      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia, feedback) }],
     });
 
     const message = await stream.finalMessage();
