@@ -79,12 +79,12 @@ function selecionarHooksDeReferencia(
 // ─── Banco de CTAs ─────────────────────────────────────────────────────────────
 
 const FOCO_PARA_TIPOS_CTA: Record<string, string[]> = {
-  dor:           ["Identificação", "Experiência Pessoal"],
-  "benefício":   ["Natural / Despretensioso", "Recomendação (Indireta)"],
-  "transformação":["Experiência Pessoal", "Natural / Despretensioso"],
-  prova:         ["Natural / Despretensioso", "Recomendação (Indireta)"],
-  oferta:        ["Urgência Leve", "Direto (Mas Ainda Humano)"],
-  "objeção":     ["Identificação", "Curiosidade"],
+  dor:            ["dor"],
+  "benefício":    ["benefício"],
+  "transformação":["dor", "benefício"],
+  prova:          ["benefício"],
+  oferta:         ["benefício"],
+  "objeção":      ["dor"],
 };
 
 function selecionarCtasDeReferencia(foco: FocoRoteiro): string[] {
