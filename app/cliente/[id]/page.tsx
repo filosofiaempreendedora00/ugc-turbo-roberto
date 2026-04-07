@@ -349,6 +349,9 @@ export default function ClientePage() {
                   avatar={avatarAtivo}
                   onSuccess={handleAvatarSuccess}
                   onBack={() => setActiveAvatarId(null)}
+                  produtos={produtos}
+                  guiaMarca={cliente.guiaMarca}
+                  avatarIndex={avatares.length + (activeAvatarId === "new" ? 1 : 0)}
                 />
               </div>
             </>

@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { addAvatar, updateAvatar } from "@/lib/storage";
-import { AvatarICP, Cliente } from "@/types";
-import { Check, ChevronLeft, Loader2, Plus, Save, X } from "lucide-react";
+import { AvatarICP, Cliente, GuiaMarca, Produto } from "@/types";
+import { AlertCircle, Check, ChevronLeft, Loader2, Plus, Save, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -161,11 +161,17 @@ interface GuiaAvatarFormProps {
   avatar?: AvatarICP;
   onSuccess: (cliente: Cliente) => void;
   onBack: () => void;
+  /** Lista de produtos cadastrados para o dropdown de geração com IA */
+  produtos?: Produto[];
+  /** Guia de marca do cliente para enriquecer o contexto */
+  guiaMarca?: GuiaMarca;
+  /** Número sequencial para nomear o avatar gerado (ex: 2 → "Avatar 2 — ...") */
+  avatarIndex?: number;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAvatarFormProps) {
+export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack, produtos = [], guiaMarca, avatarIndex = 1 }: GuiaAvatarFormProps) {
   const [nome, setNome]             = useState(avatar?.nome ?? "");
   const [idadeRange, setIdadeRange] = useState(avatar?.idadeRange ?? "");
   const [genero, setGenero]         = useState(avatar?.genero ?? "");
@@ -179,6 +185,14 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAva
   const [loading, setLoading]       = useState(false);
   const [saved, setSaved]           = useState(false);
 
+  // ── Geração com IA ─────────────────────────────────────────────────────────
+  const [selectedProdutoId, setSelectedProdutoId] = useState<string>(
+    produtos.length > 0 ? produtos[0].id : ""
+  );
+  const [generating, setGenerating]   = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [generated, setGenerated]     = useState(false);
+
   const doreRef    = useRef<HTMLInputElement>(null);
   const desejoRef  = useRef<HTMLInputElement>(null);
   const objecaoRef = useRef<HTMLInputElement>(null);
@@ -189,6 +203,44 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAva
   const b3Done = desejos.length > 0;
   const b4Done = objecoes.length > 0;
   const blocksComplete = [b1Done, b2Done, b3Done, b4Done].filter(Boolean).length;
+
+  // ── Gerar avatar com IA ───────────────────────────────────────────────────
+  async function handleGenerate() {
+    setGenerating(true);
+    setGenerateError("");
+    setGenerated(false);
+    try {
+      const selectedProduto = produtos.find(p => p.id === selectedProdutoId);
+      const res = await fetch("/api/gerar-avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guiaMarca: guiaMarca ?? null,
+          nomeProduto: selectedProduto?.nome ?? "",
+          guiaProduto: selectedProduto?.guia ?? null,
+          avatarIndex,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenerateError(data.error ?? "Erro ao gerar o avatar.");
+        return;
+      }
+      if (data.nome)       setNome(data.nome);
+      if (data.idadeRange) setIdadeRange(data.idadeRange);
+      if (data.genero)     setGenero(data.genero);
+      if (data.situacao)   setSituacao(data.situacao);
+      if (data.dores?.length)   setDores(data.dores);
+      if (data.desejos?.length) setDesejos(data.desejos);
+      if (data.objecoes?.length) setObjecoes(data.objecoes);
+      setGenerated(true);
+      setSaved(false);
+    } catch {
+      setGenerateError("Erro de conexão. Verifique sua internet e tente novamente.");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   // ── Chip factory ───────────────────────────────────────────────────────────
   function useChips(
@@ -249,6 +301,102 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack }: GuiaAva
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit}>
+
+      {/* ── Geração com IA ────────────────────────────────────────────────── */}
+      {!avatar && (
+        <div className={cn(
+          "mb-7 rounded-2xl border transition-all duration-300",
+          generated
+            ? "border-emerald-200 bg-emerald-50/60"
+            : "border-violet-100 bg-gradient-to-br from-violet-50/80 to-indigo-50/60"
+        )}>
+          <div className="px-5 pt-4 pb-3">
+            <div className="flex items-start gap-3 mb-3">
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                generated ? "bg-emerald-100 text-emerald-600" : "bg-violet-100 text-violet-600"
+              )}>
+                {generated ? <Check size={15} strokeWidth={2.5} /> : <Sparkles size={15} />}
+              </div>
+              <div>
+                <p className={cn("text-sm font-semibold", generated ? "text-emerald-700" : "text-violet-800")}>
+                  {generated ? "Avatar gerado automaticamente" : "Gerar avatar com IA"}
+                </p>
+                <p className={cn("text-xs mt-0.5", generated ? "text-emerald-600" : "text-violet-500/80")}>
+                  {generated
+                    ? "Revise os campos abaixo e ajuste o que precisar antes de salvar."
+                    : produtos.length === 0
+                      ? "Cadastre ao menos um produto para gerar o avatar ideal com IA."
+                      : "Selecione o produto e geraremos o perfil do comprador real com base nos dados da marca e do produto."}
+                </p>
+              </div>
+            </div>
+
+            {!generated && produtos.length > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedProdutoId}
+                  onChange={e => setSelectedProdutoId(e.target.value)}
+                  disabled={generating}
+                  className={cn(
+                    "w-40 h-9 px-2.5 rounded-xl text-xs bg-white transition-shadow truncate",
+                    "ring-1 ring-violet-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
+                    "text-gray-700",
+                    generating && "opacity-60 cursor-not-allowed"
+                  )}
+                >
+                  {produtos.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={generating || !selectedProdutoId}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold transition-all shrink-0",
+                    "bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200/70",
+                    (generating || !selectedProdutoId) && "opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  {generating
+                    ? <><Loader2 size={14} className="animate-spin" />Gerando...</>
+                    : <><Sparkles size={14} />Gerar avatar</>
+                  }
+                </button>
+              </div>
+            )}
+
+            {generated && (
+              <button
+                type="button"
+                onClick={() => { setGenerated(false); }}
+                className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline underline-offset-2 transition-colors"
+              >
+                Gerar outro avatar
+              </button>
+            )}
+          </div>
+
+          {generateError && (
+            <div className="px-5 pb-4">
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-100">
+                <AlertCircle size={13} className="text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-600">{generateError}</p>
+              </div>
+            </div>
+          )}
+
+          {generating && (
+            <div className="px-5 pb-4">
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-violet-100/60">
+                <Loader2 size={13} className="text-violet-500 animate-spin shrink-0" />
+                <p className="text-xs text-violet-600 font-medium">Analisando produto e marca para criar o perfil do comprador real...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Nome */}
       <div className="mb-6 pb-6 border-b border-gray-100">

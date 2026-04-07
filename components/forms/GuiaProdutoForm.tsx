@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { updateGuiaProduto } from "@/lib/storage";
 import { Produto } from "@/types";
-import { Check, ChevronLeft, Loader2, Plus, Save, X } from "lucide-react";
+import { AlertCircle, Check, ChevronLeft, Globe, Loader2, Plus, Save, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -101,6 +101,12 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
   const [saved, setSaved]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ── Product page analysis ─────────────────────────────────────────────────
+  const [produtoUrl, setProdutoUrl]   = useState("");
+  const [analyzingUrl, setAnalyzingUrl] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState("");
+  const [analyzed, setAnalyzed]       = useState(false);
+
   // ── Completion ───────────────────────────────────────────────────────────────
   const b1Done = problema.trim().length > 0;
   const b2Done = beneficios.length > 0;
@@ -130,6 +136,44 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
       addBeneficio(benefInput);
     } else if (e.key === "Backspace" && benefInput === "" && beneficios.length > 0) {
       removeBeneficio(beneficios[beneficios.length - 1]);
+    }
+  }
+
+  // ── Product page analysis handler ────────────────────────────────────────────
+  async function handleAnalyzeProduto() {
+    const url = produtoUrl.trim();
+    if (!url) return;
+    setAnalyzingUrl(true);
+    setAnalyzeError("");
+    setAnalyzed(false);
+    try {
+      const res = await fetch("/api/analisar-produto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAnalyzeError(data.error ?? "Erro ao analisar a página.");
+        return;
+      }
+      if (data.problema)    { setProblema(data.problema);       setSaved(false); }
+      if (data.beneficios?.length) { setBeneficios(data.beneficios); setSaved(false); }
+      if (data.diferencial) { setDiferencial(data.diferencial); setSaved(false); }
+      if (data.prova)       { setProva(data.prova);             setSaved(false); }
+      if (data.uso)         { setUso(data.uso);                 setSaved(false); }
+      setAnalyzed(true);
+    } catch {
+      setAnalyzeError("Erro de conexão. Verifique sua internet e tente novamente.");
+    } finally {
+      setAnalyzingUrl(false);
+    }
+  }
+
+  function handleUrlKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAnalyzeProduto();
     }
   }
 
@@ -166,6 +210,100 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit}>
+
+      {/* ── Product page analyzer card ───────────────────────────────────── */}
+      <div className={cn(
+        "mb-7 rounded-2xl border transition-all duration-300",
+        analyzed
+          ? "border-emerald-200 bg-emerald-50/60"
+          : "border-violet-100 bg-gradient-to-br from-violet-50/80 to-indigo-50/60"
+      )}>
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-start gap-3 mb-3">
+            <div className={cn(
+              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+              analyzed ? "bg-emerald-100 text-emerald-600" : "bg-violet-100 text-violet-600"
+            )}>
+              {analyzed ? <Check size={15} strokeWidth={2.5} /> : <Sparkles size={15} />}
+            </div>
+            <div>
+              <p className={cn("text-sm font-semibold", analyzed ? "text-emerald-700" : "text-violet-800")}>
+                {analyzed ? "Guia preenchido automaticamente" : "Preencher com IA"}
+              </p>
+              <p className={cn("text-xs mt-0.5", analyzed ? "text-emerald-600" : "text-violet-500/80")}>
+                {analyzed
+                  ? "Revise os campos abaixo e ajuste o que precisar antes de salvar."
+                  : "Insira a URL da página do produto e preencheremos o guia automaticamente."}
+              </p>
+            </div>
+          </div>
+
+          {!analyzed && (
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="url"
+                  value={produtoUrl}
+                  onChange={(e) => { setProdutoUrl(e.target.value); setAnalyzeError(""); }}
+                  onKeyDown={handleUrlKeyDown}
+                  placeholder="https://loja.com.br/produto"
+                  disabled={analyzingUrl}
+                  className={cn(
+                    "w-full h-10 pl-9 pr-3.5 rounded-xl text-sm bg-white transition-shadow",
+                    "ring-1 ring-violet-200 focus:ring-2 focus:ring-violet-400 focus:outline-none",
+                    "placeholder:text-gray-300 text-gray-800",
+                    analyzingUrl && "opacity-60 cursor-not-allowed"
+                  )}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAnalyzeProduto}
+                disabled={!produtoUrl.trim() || analyzingUrl}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold transition-all shrink-0",
+                  "bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-200/70",
+                  (!produtoUrl.trim() || analyzingUrl) && "opacity-40 cursor-not-allowed"
+                )}
+              >
+                {analyzingUrl
+                  ? <><Loader2 size={14} className="animate-spin" />Analisando...</>
+                  : <><Sparkles size={14} />Analisar página</>
+                }
+              </button>
+            </div>
+          )}
+
+          {analyzed && (
+            <button
+              type="button"
+              onClick={() => { setAnalyzed(false); setProdutoUrl(""); }}
+              className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline underline-offset-2 transition-colors"
+            >
+              Analisar outra página
+            </button>
+          )}
+        </div>
+
+        {analyzeError && (
+          <div className="px-5 pb-4">
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-100">
+              <AlertCircle size={13} className="text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-600">{analyzeError}</p>
+            </div>
+          </div>
+        )}
+
+        {analyzingUrl && (
+          <div className="px-5 pb-4">
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-violet-100/60">
+              <Loader2 size={13} className="text-violet-500 animate-spin shrink-0" />
+              <p className="text-xs text-violet-600 font-medium">Lendo a página e interpretando o produto...</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Progress */}
       <div className="flex items-center gap-3 mb-7 pb-6 border-b border-gray-100">
