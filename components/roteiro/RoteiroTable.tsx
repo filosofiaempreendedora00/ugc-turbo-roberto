@@ -13,7 +13,7 @@ import {
 interface RoteiroTableProps {
   roteiros: Roteiro[];
   onRegenerateHooks: (locked: { index: number; text: string }[]) => void;
-  onRegenerateCenas: (lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string) => void;
+  onRegenerateCenas: (lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string, currentBodyCenas?: CenaRoteiro[]) => void;
   onGerarNovo: () => void;
   hooksLoading?: boolean;
   cenesGeradas: { [id: string]: CenaRoteiro[] };
@@ -571,7 +571,7 @@ export function RoteiroTable({
             </div>
             <FeedbackSection
               onSubmit={(feedback) =>
-                onRegenerateCenas([], true, getCurrentCtaLocked(), feedback)
+                onRegenerateCenas([], true, getCurrentCtaLocked(), feedback, bodyCenas)
               }
               loading={loadingBodyCenas}
             />

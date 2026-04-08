@@ -452,7 +452,7 @@ function GerarPageInner() {
     }
   }
 
-  async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string) {
+  async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string, currentBodyCenas?: CenaRoteiro[]) {
     const roteiro = roteiros[0];
     if (!roteiro) return;
     const cliente = getClienteById(estado.clienteId);
@@ -483,6 +483,7 @@ function GerarPageInner() {
           ctasDeReferencia: modoGeracao === "padrao" ? selecionarCtasDeReferencia(roteiro.foco) : [],
           roteiroReferencia: modoGeracao === "inspirado" ? roteiroReferencia : undefined,
           feedback,
+          currentBodyCenas: feedback ? currentBodyCenas : undefined,
         }),
       });
       const data = await res.json();

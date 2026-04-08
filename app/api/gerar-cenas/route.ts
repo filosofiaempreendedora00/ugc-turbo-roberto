@@ -434,7 +434,7 @@ function parseBeneficios(raw: string): string {
   return raw;
 }
 
-function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[], feedback?: string, roteiroReferencia?: string): string {
+function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[], feedback?: string, roteiroReferencia?: string, currentBodyCenas?: { cena: number; fala: string }[]): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
   const sementeNarrativa = roteiroReferencia ? null : sortearSementeNarrativa();
 
@@ -547,20 +547,29 @@ Exemplos de como integrar (adapte ao CTA base do banco):
 Se o CTA gerado não incluir esta oferta → descarte e reescreva até incluir.` : ""}
 
 ${feedback ? `
-## FEEDBACK DO USUÁRIO SOBRE O BODY ANTERIOR — PRIORIDADE MÁXIMA
+## FEEDBACK DO USUÁRIO — MODO CIRÚRGICO (PRIORIDADE MÁXIMA)
+
+BODY ATUAL:
+${currentBodyCenas && currentBodyCenas.length > 0
+  ? currentBodyCenas.map(c => `Cena ${c.cena}: ${c.fala}`).join("\n")
+  : "(body não disponível)"}
+
+FEEDBACK DO USUÁRIO:
 "${feedback}"
 
-Este feedback descreve o que o usuário não gostou no body gerado anteriormente. O novo body DEVE incorporar este feedback de forma direta e específica. Não ignore, não suavize — aplique o ajuste pedido em cada cena que o feedback afeta.
-- O hook (cena 1) já está definido e NÃO deve ser alterado.
-- O CTA (última cena) já está definido e NÃO deve ser alterado.
-- Apenas o body (cenas intermediárias) deve ser regenerado, considerando este feedback.
+REGRAS ABSOLUTAS PARA APLICAR O FEEDBACK:
+1. Leia o feedback com atenção e identifique EXATAMENTE quais cenas ele menciona ou implica modificar.
+2. As cenas que NÃO foram mencionadas no feedback devem ser reproduzidas LITERALMENTE no output — mesma fala, mesma ordem, sem reescritas, sem "melhorias", sem paráfrases.
+3. Apenas as cenas mencionadas no feedback devem ser alteradas, aplicando exatamente o que foi pedido.
+4. Se o usuário disser "gostei de tudo, mude apenas X", isso significa que TUDO exceto X deve ser idêntico ao body atual acima.
+5. O hook (cena 1) e o CTA (última cena) NÃO devem ser alterados.
 ` : ""}
 Gere o roteiro completo: cena 1 com o hook mais forte, cenas 2 a 6 ou 7 formando o body (mínimo 5, máximo 6 cenas de body), e a última cena com o CTA. Total: 7 a 8 cenas. Honre o tom de voz da marca e as dores/desejos do avatar em cada fala.`;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia } = await request.json() as {
+    const { cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia, currentBodyCenas } = await request.json() as {
       cliente: Cliente;
       produto: Produto;
       config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">;
@@ -568,6 +577,7 @@ export async function POST(request: NextRequest) {
       ctasDeReferencia?: string[];
       feedback?: string;
       roteiroReferencia?: string;
+      currentBodyCenas?: { cena: number; fala: string }[];
     };
 
     if (!cliente || !produto || !config || !roteiro) {
@@ -578,7 +588,7 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia) }],
+      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia, currentBodyCenas) }],
     });
 
     const message = await stream.finalMessage();
