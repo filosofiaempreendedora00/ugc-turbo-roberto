@@ -12,7 +12,7 @@ import {
   Produto, Roteiro, FOCO_LABELS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
-import { ChevronDown, Lock, Loader2, Wand2, RotateCcw } from "lucide-react";
+import { ChevronDown, Lock, Loader2, Wand2, RotateCcw, Sparkles, X, FileText, Database } from "lucide-react";
 import { SEED_HOOKS, STORAGE_HOOKS } from "@/lib/hooks-seed";
 import { SEED_CTAS, STORAGE_CTAS } from "@/lib/ctas-seed";
 
@@ -170,11 +170,17 @@ function GerarPageInner() {
   const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [loading, setLoading] = useState(false);
   const resultadoRef = useRef<HTMLDivElement>(null);
+  const isFirstRenderRef = useRef(true);
   const [cenesGeradas, setCenesGeradas] = useState<{ [id: string]: CenaRoteiro[] }>({});
-  const [cenesLoading, setCenesLoading] = useState<{ [id: string]: boolean }>({});
+  const [bodyLoading, setBodyLoading] = useState<{ [id: string]: boolean }>({});
+  const [ctaLoading, setCtaLoading] = useState<{ [id: string]: boolean }>({});
   const [doresTags, setDoresTags] = useState<string[]>([]);
   const [beneficiosTags, setBeneficiosTags] = useState<string[]>([]);
   const [angulosSelecionados, setAngulosSelecionados] = useState<string[]>([]);
+  const [modoGeracao, setModoGeracao] = useState<"padrao" | "inspirado">("padrao");
+  const [roteiroReferencia, setRoteiroReferencia] = useState("");
+  const [showModalReferencia, setShowModalReferencia] = useState(false);
+  const [roteiroReferenciaRascunho, setRoteiroReferenciaRascunho] = useState("");
 
   useEffect(() => {
     const todos = getClientes();
@@ -216,19 +222,28 @@ function GerarPageInner() {
           if (session.cenesGeradas) setCenesGeradas(session.cenesGeradas);
           if (session.angulosSelecionados) setAngulosSelecionados(session.angulosSelecionados);
           if (session.avatarSelecionadoId) setAvatarSelecionadoId(session.avatarSelecionadoId);
+          if (session.modoGeracao) setModoGeracao(session.modoGeracao);
+          if (session.roteiroReferencia) setRoteiroReferencia(session.roteiroReferencia);
         }
       } catch { /* sessionStorage indisponível ou dado corrompido */ }
     }
   }, [searchParams]);
 
-  // Persiste sessão sempre que estado relevante muda
+  // Persiste sessão sempre que estado relevante muda.
+  // Pula o primeiro render para não sobrescrever a sessão salva com o estado padrão
+  // antes que o efeito de restauração tenha chance de re-renderizar com os valores corretos.
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
     try {
       sessionStorage.setItem(GERAR_SESSION_KEY, JSON.stringify({
         estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId,
+        modoGeracao, roteiroReferencia,
       }));
     } catch { /* ignore */ }
-  }, [estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId]);
+  }, [estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId, modoGeracao, roteiroReferencia]);
 
   function handleClienteChange(clienteId: string) {
     if (!clienteId) return;
@@ -283,6 +298,8 @@ function GerarPageInner() {
     setCenesGeradas({});
     setAngulosSelecionados([]);
     setAvatarSelecionadoId("");
+    setModoGeracao("padrao");
+    setRoteiroReferencia("");
     setProdutos([]);
     setAvatares([]);
     setDoresTags([]);
@@ -311,7 +328,9 @@ function GerarPageInner() {
       anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
     };
 
-    const hooksDeReferencia = selecionarHooksDeReferencia(estado.foco as FocoRoteiro, cliente, produto);
+    const hooksDeReferencia = modoGeracao === "padrao"
+      ? selecionarHooksDeReferencia(estado.foco as FocoRoteiro, cliente, produto)
+      : [];
 
     window.scrollTo({ top: 0, behavior: "smooth" });
     setLoading(true);
@@ -319,7 +338,10 @@ function GerarPageInner() {
       const res = await fetch("/api/gerar-roteiros", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente, produto, config, hooksDeReferencia }),
+        body: JSON.stringify({
+          cliente, produto, config, hooksDeReferencia,
+          roteiroReferencia: modoGeracao === "inspirado" ? roteiroReferencia : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? "Erro ao gerar roteiro."); return; }
@@ -347,7 +369,8 @@ function GerarPageInner() {
 
   async function gerarCenas(roteiro: Roteiro, clienteObj: ReturnType<typeof getClienteById>, produtoObj: ReturnType<typeof getProdutoById>) {
     if (!clienteObj || !produtoObj) return;
-    setCenesLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    setBodyLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    setCtaLoading((prev) => ({ ...prev, [roteiro.id]: true }));
     try {
       const res = await fetch("/api/gerar-cenas", {
         method: "POST",
@@ -364,7 +387,8 @@ function GerarPageInner() {
             anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
           },
           roteiro,
-          ctasDeReferencia: selecionarCtasDeReferencia(roteiro.foco),
+          ctasDeReferencia: modoGeracao === "padrao" ? selecionarCtasDeReferencia(roteiro.foco) : [],
+          roteiroReferencia: modoGeracao === "inspirado" ? roteiroReferencia : undefined,
         }),
       });
       const data = await res.json();
@@ -373,7 +397,8 @@ function GerarPageInner() {
     } catch {
       toast.error("Erro de conexão ao gerar cenas.");
     } finally {
-      setCenesLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+      setBodyLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+      setCtaLoading((prev) => ({ ...prev, [roteiro.id]: false }));
     }
   }
 
@@ -434,7 +459,11 @@ function GerarPageInner() {
     const produto = getProdutoById(estado.produtoId);
     if (!cliente || !produto) return;
 
-    setCenesLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    if (ctaLocked) {
+      setBodyLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    } else {
+      setCtaLoading((prev) => ({ ...prev, [roteiro.id]: true }));
+    }
     try {
       const res = await fetch("/api/gerar-cenas", {
         method: "POST",
@@ -451,7 +480,8 @@ function GerarPageInner() {
             anguloCentral: angulosSelecionados.length > 0 ? angulosSelecionados.join(", ") : undefined,
           },
           roteiro,
-          ctasDeReferencia: selecionarCtasDeReferencia(roteiro.foco),
+          ctasDeReferencia: modoGeracao === "padrao" ? selecionarCtasDeReferencia(roteiro.foco) : [],
+          roteiroReferencia: modoGeracao === "inspirado" ? roteiroReferencia : undefined,
           feedback,
         }),
       });
@@ -479,15 +509,20 @@ function GerarPageInner() {
       // Preserve hook cena (cena 1) from current cenas
       const hookCena = currentCenas[0] ?? newCenas[0];
 
-      // CTA: preserve if ctaLocked, otherwise use new
-      const mergedCta = ctaLocked && lockedCta ? { ...lockedCta, cena: newCtaCena.cena } : newCtaCena;
+      // CTA: preserve if ctaLocked (use current CTA as-is), otherwise use new
+      const currentCtaCena = currentCenas[currentCenas.length - 1];
+      const mergedCta = ctaLocked && currentCtaCena ? currentCtaCena : newCtaCena;
 
       setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: [hookCena, ...mergedBodyCenas, mergedCta] }));
       toast.success("Cenas regeneradas!");
     } catch {
       toast.error("Erro de conexão ao regenerar cenas.");
     } finally {
-      setCenesLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+      if (ctaLocked) {
+        setBodyLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+      } else {
+        setCtaLoading((prev) => ({ ...prev, [roteiro.id]: false }));
+      }
     }
   }
 
@@ -496,6 +531,71 @@ function GerarPageInner() {
 
   return (
     <>
+      {/* Modal — Roteiro de Referência */}
+      {showModalReferencia && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="p-6 pb-4 border-b border-gray-100">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center shrink-0">
+                      <Sparkles size={13} className="text-white" />
+                    </div>
+                    Roteiro de referência
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                    Cole um roteiro validado de qualquer cliente ou nicho. A IA vai criar um novo roteiro profundamente inspirado na estrutura dos hooks, body e CTA — adaptado ao cliente e produto selecionados.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all shrink-0"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 flex-1 overflow-auto">
+              <textarea
+                value={roteiroReferenciaRascunho}
+                onChange={(e) => setRoteiroReferenciaRascunho(e.target.value)}
+                placeholder={"Hook 1: ...\nHook 2: ...\n\nCena 1: ...\nCena 2: ...\nCena 3: ...\nCena 4: ...\n\nCTA: ..."}
+                rows={14}
+                autoFocus
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent resize-none"
+              />
+            </div>
+            <div className="p-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-4">
+              <p className="text-xs text-gray-400">O roteiro pode ser de qualquer nicho — a estrutura é o que importa.</p>
+              <div className="flex gap-3 shrink-0">
+                <button
+                  onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
+                  className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setRoteiroReferencia(roteiroReferenciaRascunho.trim());
+                    setShowModalReferencia(false);
+                  }}
+                  disabled={!roteiroReferenciaRascunho.trim()}
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <Sparkles size={13} />
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Gerar Roteiro</h1>
         <p className="text-gray-500 text-sm mt-1">Configure os parâmetros e gere roteiros UGC prontos para produção.</p>
@@ -514,6 +614,75 @@ function GerarPageInner() {
                 >
                   <RotateCcw size={12} />
                   Novo roteiro
+                </button>
+              )}
+            </div>
+
+            {/* Modo de Geração */}
+            <div className="space-y-2.5">
+              <Label className="text-gray-700 text-xs">Modo de geração</Label>
+              <div className="flex rounded-xl border border-gray-100 bg-gray-50 p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setModoGeracao("padrao")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    modoGeracao === "padrao"
+                      ? "bg-white text-slate-700 shadow-sm ring-1 ring-gray-200"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  <Database size={11} />
+                  Padrão
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModoGeracao("inspirado");
+                    if (!roteiroReferencia) {
+                      setRoteiroReferenciaRascunho("");
+                      setShowModalReferencia(true);
+                    }
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    modoGeracao === "inspirado"
+                      ? "bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-sm"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  <Sparkles size={11} />
+                  Inspirado
+                </button>
+              </div>
+
+              {modoGeracao === "inspirado" && (
+                <button
+                  type="button"
+                  onClick={() => { setRoteiroReferenciaRascunho(roteiroReferencia); setShowModalReferencia(true); }}
+                  className={`w-full text-left rounded-xl border transition-all px-3 py-2.5 ${
+                    roteiroReferencia
+                      ? "border-amber-200 bg-amber-50 hover:bg-amber-100"
+                      : "border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50"
+                  }`}
+                >
+                  {roteiroReferencia ? (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+                          <FileText size={11} />
+                          Roteiro de referência ativo
+                        </p>
+                        <p className="text-xs text-amber-600 mt-0.5 line-clamp-2 leading-relaxed">
+                          {roteiroReferencia.slice(0, 100)}{roteiroReferencia.length > 100 ? "…" : ""}
+                        </p>
+                      </div>
+                      <span className="text-xs text-amber-500 shrink-0 font-medium pt-0.5">Editar</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 py-1">
+                      <Sparkles size={12} className="text-amber-500" />
+                      <span className="text-xs font-medium text-amber-600">Colar roteiro de referência</span>
+                    </div>
+                  )}
                 </button>
               )}
             </div>
@@ -864,7 +1033,8 @@ function GerarPageInner() {
               onGerarNovo={() => { setRoteiros([]); setCenesGeradas({}); }}
               hooksLoading={loading}
               cenesGeradas={cenesGeradas}
-              cenesLoading={cenesLoading}
+              bodyLoading={bodyLoading}
+              ctaLoading={ctaLoading}
               onGerarCenas={handleGerarCenas}
             />
           )}

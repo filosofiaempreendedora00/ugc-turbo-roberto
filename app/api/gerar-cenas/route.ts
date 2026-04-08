@@ -434,9 +434,9 @@ function parseBeneficios(raw: string): string {
   return raw;
 }
 
-function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[], feedback?: string): string {
+function buildPrompt(cliente: Cliente, produto: Produto, config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">, roteiro: Roteiro, ctasDeReferencia?: string[], feedback?: string, roteiroReferencia?: string): string {
   const hooksTexto = roteiro.hooks.map((h, i) => `Hook ${i + 1}: ${h}`).join("\n");
-  const sementeNarrativa = sortearSementeNarrativa();
+  const sementeNarrativa = roteiroReferencia ? null : sortearSementeNarrativa();
 
   const anguloSection = config.anguloCentral
     ? `## ÂNGULO CENTRAL — ESPINHA DORSAL DO ROTEIRO (PRIORIDADE MÁXIMA)
@@ -451,14 +451,52 @@ Este ângulo é o fio condutor de TODAS as cenas. Não é só o gancho — é a 
 `
     : "";
 
-  return `${anguloSection}## PERSPECTIVA NARRATIVA DESTA GERAÇÃO (OBRIGATÓRIA)
+  const modoInspiradoCenas = roteiroReferencia
+    ? `## MODO INSPIRADO — ROTEIRO DE REFERÊNCIA (MOLDE OBRIGATÓRIO)
+
+ROTEIRO DE REFERÊNCIA:
+${roteiroReferencia}
+
+---
+
+PASSO 1 — ANÁLISE DO BODY (faça internamente antes de gerar):
+Para cada cena do body do roteiro de referência, identifique:
+a) O TIPO DE ARGUMENTO desta cena (ex: "contexto de rotina do avatar", "problema identificado", "descoberta do produto", "feature específica com dado concreto", "facilidade de uso", etc.)
+b) A extensão da fala (curta / média / longa)
+c) O tom (emocional, informativo, surpresa, prova social, etc.)
+
+PASSO 2 — ANÁLISE DO CTA (faça internamente):
+a) Quais CATEGORIAS de informação o CTA do referência inclui? (ex: prazo de entrega, forma de pagamento, call to action explícito, benefício final, etc.)
+b) O tom do CTA (urgência, convite, dica amigável, etc.)
+c) A extensão
+
+PASSO 3 — GERAÇÃO (regras absolutas):
+BODY:
+- O número de cenas do body do output DEVE ser IGUAL ao do roteiro de referência. Conte as cenas do referência e gere exatamente a mesma quantidade.
+- Cena 2 do output = mesmo TIPO DE ARGUMENTO da cena 2 do referência, adaptado ao novo produto/avatar.
+- Cena 3 do output = mesmo TIPO DE ARGUMENTO da cena 3 do referência, adaptado ao novo produto/avatar.
+- E assim por diante para cada cena.
+- A extensão de cada fala deve ser similar à do referência.
+- NÃO use a narrativa padrão UGC (tentei e errei, descobri, etc.) se não for o padrão do referência. Siga o roteiro de referência.
+
+CTA:
+- O CTA do output DEVE incluir as mesmas CATEGORIAS de informação do CTA do referência (adaptadas ao produto/oferta do novo cliente).
+- O tom e a estrutura do CTA devem ser idênticos ao do referência.
+- Se o referência termina com uma chamada direta ao avatar ("Testa e depois me conta"), o output também termina assim.
+
+---
+
+Gere as cenas para o seguinte roteiro UGC:`
+    : `## PERSPECTIVA NARRATIVA DESTA GERAÇÃO (OBRIGATÓRIA)
 ${sementeNarrativa}
 
 Esta perspectiva define como as cenas 2, 3 e 4 devem ser construídas. Ela não substitui o ângulo central ou o foco — é a forma como a história de fundo do avatar entra no roteiro. Honre esta perspectiva mesmo que outras gerações tenham usado abordagens diferentes para o mesmo produto.
 
 ---
 
-Gere as cenas para o seguinte roteiro UGC:
+Gere as cenas para o seguinte roteiro UGC:`;
+
+  return `${anguloSection}${modoInspiradoCenas}
 
 ## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}
@@ -522,13 +560,14 @@ Gere o roteiro completo: cena 1 com o hook mais forte, cenas 2 a 6 ou 7 formando
 
 export async function POST(request: NextRequest) {
   try {
-    const { cliente, produto, config, roteiro, ctasDeReferencia, feedback } = await request.json() as {
+    const { cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia } = await request.json() as {
       cliente: Cliente;
       produto: Produto;
       config: Pick<ConfiguracaoGeracao, "icp" | "foco" | "formato" | "oferta" | "mensagemObrigatoria" | "anguloCentral">;
       roteiro: Roteiro;
       ctasDeReferencia?: string[];
       feedback?: string;
+      roteiroReferencia?: string;
     };
 
     if (!cliente || !produto || !config || !roteiro) {
@@ -539,7 +578,7 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia, feedback) }],
+      messages: [{ role: "user", content: buildPrompt(cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia) }],
     });
 
     const message = await stream.finalMessage();

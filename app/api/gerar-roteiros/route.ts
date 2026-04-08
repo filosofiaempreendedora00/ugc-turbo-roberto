@@ -377,8 +377,8 @@ function parseBeneficios(raw: string): string {
   return raw;
 }
 
-function buildUserPrompt(cliente: Cliente, produto: Produto, config: ConfiguracaoGeracao, hooksDeReferencia?: string[]): string {
-  const sementeHook = sortearSementeHook();
+function buildUserPrompt(cliente: Cliente, produto: Produto, config: ConfiguracaoGeracao, hooksDeReferencia?: string[], roteiroReferencia?: string): string {
+  const sementeHook = roteiroReferencia ? null : sortearSementeHook();
   const anguloSection = config.anguloCentral
     ? `## ÂNGULO CENTRAL — ESPINHA DORSAL DO ROTEIRO (PRIORIDADE MÁXIMA)
 ${config.anguloCentral}
@@ -393,14 +393,41 @@ Este é o único fio condutor. Todas as decisões criativas giram em torno deste
 `
     : "";
 
-  return `${anguloSection}## PERSPECTIVA EMOCIONAL DESTA GERAÇÃO (OBRIGATÓRIA)
+  const modoInspirado = roteiroReferencia
+    ? `## MODO INSPIRADO — ROTEIRO DE REFERÊNCIA (MOLDE OBRIGATÓRIO)
+
+ROTEIRO DE REFERÊNCIA:
+${roteiroReferencia}
+
+---
+
+PASSO 1 — ANÁLISE (faça internamente antes de gerar):
+Para cada hook do roteiro de referência, identifique:
+a) Comprimento exato em palavras
+b) Estrutura gramatical: como abre (verbo, substantivo, frase nominal?), o ritmo, o tipo de promessa ou gatilho
+c) O "esqueleto verbal" — ex: "Vou [verbo] [benefício] em [tempo]." ou "Eu parei de [problema] depois de [descoberta]." ou "Não [ação negativa] antes de [condição]."
+
+PASSO 2 — GERAÇÃO (regras absolutas):
+- Gere 5 hooks. Cada hook do output DEVE usar o esqueleto do hook correspondente do referência.
+- Hook 1 do output = esqueleto do hook 1 do referência, adaptado à nova marca/produto/avatar.
+- Hook 2 do output = esqueleto do hook 2 do referência, adaptado à nova marca/produto/avatar.
+- E assim por diante. Se o referência tiver menos de 5 hooks, repita e varie os esqueletos existentes.
+- Substitua APENAS: o benefício, o produto, o contexto — para os da nova marca. O esqueleto (comprimento, abertura, ritmo) permanece idêntico.
+- NÃO crie hooks do zero. NÃO use perspectivas emocionais aleatórias. O referência É o único molde.
+
+---
+
+Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:`
+    : `## PERSPECTIVA EMOCIONAL DESTA GERAÇÃO (OBRIGATÓRIA)
 ${sementeHook}
 
 Esta perspectiva define o ângulo emocional específico dos 5 hooks. Todos os hooks desta geração devem ser variações desta perspectiva — não repita perspectivas de outras gerações. Se recebeu estruturas de referência do banco, adapte-as a esta perspectiva emocional.
 
 ---
 
-Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:
+Gere 1 roteiro UGC com 5 hooks alternativos, usando os seguintes dados:`;
+
+  return `${anguloSection}${modoInspirado}
 
 ## MARCA: ${cliente.nome}
 - Tom de voz: ${cliente.guiaMarca.tomDeVoz || "conversacional"}
@@ -434,11 +461,12 @@ ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
 
 export async function POST(request: NextRequest) {
   try {
-    const { cliente, produto, config, hooksDeReferencia } = await request.json() as {
+    const { cliente, produto, config, hooksDeReferencia, roteiroReferencia } = await request.json() as {
       cliente: Cliente;
       produto: Produto;
       config: ConfiguracaoGeracao;
       hooksDeReferencia?: string[];
+      roteiroReferencia?: string;
     };
 
     if (!cliente || !produto || !config) {
@@ -449,7 +477,7 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 16000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(cliente, produto, config, hooksDeReferencia) }],
+      messages: [{ role: "user", content: buildUserPrompt(cliente, produto, config, hooksDeReferencia, roteiroReferencia) }],
     });
 
     const message = await stream.finalMessage();

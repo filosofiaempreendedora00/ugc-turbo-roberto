@@ -47,7 +47,7 @@ function BlockHeader({ number, label, done }: { number: string; label: string; d
 // ─── Input ────────────────────────────────────────────────────────────────────
 
 function FieldInput({
-  label, value, onChange, placeholder, hint, rows = 2,
+  label, value, onChange, placeholder, hint, rows = 5,
 }: {
   label: string; value: string; onChange: (v: string) => void; placeholder: string; hint?: string; rows?: number;
 }) {
@@ -470,7 +470,7 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
               onChange={v => { setUso(v); setSaved(false); }}
               placeholder="Ex: Tomar 2 cápsulas por dia pela manhã"
               hint="Quanto mais específico, mais realista fica o roteiro."
-              rows={4}
+              rows={5}
             />
           </div>
 
