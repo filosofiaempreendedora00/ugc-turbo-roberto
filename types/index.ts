@@ -117,7 +117,7 @@ export const FORMATO_LABELS: Record<FormatoRoteiro, string> = {
 
 export const FOCO_LABELS: Record<FocoRoteiro, string> = {
       dor: "Dor",
-      "benefício": "Benefício",
+      "benefício": "Desejo",
       "transformação": "Transformação",
       prova: "Prova Social",
       oferta: "Oferta",

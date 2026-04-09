@@ -848,7 +848,7 @@ function BancoDeCTAs() {
                   {/* Tipo */}
                   <div className="flex items-start pt-0.5">
                     {c.tipo ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-50 text-violet-700 ring-1 ring-violet-100 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-50 text-violet-700 ring-1 ring-violet-100 whitespace-nowrap capitalize">
                         {c.tipo}
                       </span>
                     ) : (
@@ -891,17 +891,14 @@ function BancoDeCTAs() {
 
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
-const CATEGORIAS_HOOK = [
-  "Benefício", "Curiosidade", "Dor", "Identificação", "Informação",
-  "Objeção", "Oferta", "Pergunta", "Persuasão", "Prova social",
-  "Transformação", "Urgência",
-];
+const CATEGORIAS_HOOK = ["Dor", "Desejo"];
 
 function BancoDeHooks() {
   const [hooks, setHooks] = useState<HookEstrutura[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [searchHook, setSearchHook] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("");
+  const [filterNicho, setFilterNicho] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const emptyForm = { estrutura: "", categoria: "", nicho: "", exemplo: "" };
@@ -916,7 +913,16 @@ function BancoDeHooks() {
         localStorage.setItem(STORAGE_HOOKS_SEEDED, "1");
         setHooks(SEED_HOOKS);
       } else if (saved) {
-        setHooks(JSON.parse(saved));
+        // Migração: normaliza categorias legadas → só "Dor" ou "Desejo"
+        const parsed: HookEstrutura[] = JSON.parse(saved);
+        const migrated = parsed.map((h) =>
+          h.categoria !== "Dor" && h.categoria !== "Desejo"
+            ? { ...h, categoria: "Desejo" }
+            : h
+        );
+        const changed = migrated.some((h, i) => h.categoria !== parsed[i].categoria);
+        if (changed) localStorage.setItem(STORAGE_HOOKS, JSON.stringify(migrated));
+        setHooks(migrated);
       }
     } catch { /* ignore */ }
   }, []);
@@ -959,47 +965,74 @@ function BancoDeHooks() {
     setShowForm(false);
   };
 
+  const nichos = useMemo(() => {
+    const set = new Set<string>();
+    hooks.forEach((h) => { if (h.nicho) set.add(h.nicho); });
+    return Array.from(set).sort();
+  }, [hooks]);
+
   const filtered = hooks.filter((h) => {
     const q = searchHook.toLowerCase();
     const matchQ = !q || h.estrutura.toLowerCase().includes(q) || h.exemplo.toLowerCase().includes(q) || h.nicho.toLowerCase().includes(q);
     const matchCat = !filterCategoria || h.categoria === filterCategoria;
-    return matchQ && matchCat;
+    const matchNicho = !filterNicho || h.nicho === filterNicho;
+    return matchQ && matchCat && matchNicho;
   });
 
   return (
     <div className="space-y-5">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchHook}
-            onChange={(e) => setSearchHook(e.target.value)}
-            placeholder="Buscar estrutura, exemplo, nicho…"
-            className="w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none placeholder:text-gray-400 text-gray-900 transition-shadow"
-          />
-          {searchHook && (
-            <button onClick={() => setSearchHook("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors">
-              <X size={14} />
-            </button>
-          )}
+      <div className="flex flex-col gap-3">
+        {/* Row 1: search + nicho dropdown + add button */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchHook}
+              onChange={(e) => setSearchHook(e.target.value)}
+              placeholder="Buscar estrutura, exemplo…"
+              className="w-full h-10 pl-10 pr-9 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none placeholder:text-gray-400 text-gray-900 transition-shadow"
+            />
+            {searchHook && (
+              <button onClick={() => setSearchHook("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <select
+            value={filterNicho}
+            onChange={(e) => setFilterNicho(e.target.value)}
+            className="h-10 px-3 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
+          >
+            <option value="">Todos os nichos</option>
+            {nichos.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
+            className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center gap-2 shrink-0 transition-colors shadow-sm"
+          >
+            <Plus size={15} />
+            Adicionar hook
+          </button>
         </div>
-        <select
-          value={filterCategoria}
-          onChange={(e) => setFilterCategoria(e.target.value)}
-          className="h-10 px-3 rounded-xl text-sm bg-white ring-1 ring-gray-200 focus:ring-2 focus:ring-violet-400 focus:outline-none text-gray-700 transition-shadow"
-        >
-          <option value="">Todas as categorias</option>
-          {CATEGORIAS_HOOK.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <button
-          onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
-          className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center gap-2 shrink-0 transition-colors shadow-sm"
-        >
-          <Plus size={15} />
-          Adicionar hook
-        </button>
+        {/* Row 2: categoria pill filters */}
+        <div className="flex items-center gap-2">
+          {["", ...CATEGORIAS_HOOK].map((c) => (
+            <button
+              key={c}
+              onClick={() => setFilterCategoria(c)}
+              className={cn(
+                "h-8 px-3.5 rounded-lg text-xs font-medium transition-all",
+                filterCategoria === c
+                  ? "bg-violet-600 text-white shadow-sm"
+                  : "bg-white ring-1 ring-gray-200 text-gray-500 hover:ring-violet-300 hover:text-violet-600"
+              )}
+            >
+              {c === "" ? "Todos" : c}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Form */}
@@ -1087,7 +1120,7 @@ function BancoDeHooks() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-sm text-gray-400">Nenhuma estrutura encontrada para essa busca.</p>
-          <button onClick={() => { setSearchHook(""); setFilterCategoria(""); }} className="mt-3 text-xs text-violet-600 hover:underline font-medium">
+          <button onClick={() => { setSearchHook(""); setFilterCategoria(""); setFilterNicho(""); }} className="mt-3 text-xs text-violet-600 hover:underline font-medium">
             Limpar filtros
           </button>
         </div>
@@ -1221,7 +1254,7 @@ function BancoDeHooks() {
           <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
             <p className="text-xs text-gray-400">
               {filtered.length} estrutura{filtered.length !== 1 ? "s" : ""}
-              {(searchHook || filterCategoria) ? ` (filtrado de ${hooks.length})` : " no banco"}
+              {(searchHook || filterCategoria || filterNicho) ? ` (filtrado de ${hooks.length})` : " no banco"}
             </p>
           </div>
         </div>

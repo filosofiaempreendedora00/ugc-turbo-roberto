@@ -21,12 +21,12 @@ const GERAR_SESSION_KEY = "ugc:gerar:session";
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
 const FOCO_PARA_CATEGORIAS: Record<string, string[]> = {
-  dor:          ["Dor", "Identificação"],
-  benefício:    ["Benefício"],
-  transformação:["Transformação"],
-  prova:        ["Prova social"],
-  oferta:       ["Oferta", "Urgência"],
-  objeção:      ["Objeção", "Persuasão"],
+  dor:          ["Dor"],
+  benefício:    ["Desejo"],
+  transformação:["Desejo"],
+  prova:        ["Desejo"],
+  oferta:       ["Desejo"],
+  objeção:      ["Dor", "Desejo"],
 };
 
 const NICHO_KEYWORDS: Record<string, string[]> = {
