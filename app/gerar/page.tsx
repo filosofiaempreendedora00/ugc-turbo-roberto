@@ -12,11 +12,31 @@ import {
   Produto, Roteiro, FOCO_LABELS, FORMATO_LABELS, AvatarICP,
 } from "@/types";
 import { getClientes, getClienteById, getProdutosByCliente, getProdutoById, getAvataresByCliente } from "@/lib/storage";
-import { ChevronDown, Lock, Loader2, Wand2, RotateCcw, Sparkles, X, FileText, Database } from "lucide-react";
+import { ChevronDown, Lock, Loader2, Wand2, RotateCcw, Sparkles, X, FileText, Database, Search, Trophy, User, Film, BookOpen } from "lucide-react";
 import { SEED_HOOKS, STORAGE_HOOKS } from "@/lib/hooks-seed";
 import { SEED_CTAS, STORAGE_CTAS } from "@/lib/ctas-seed";
 
 const GERAR_SESSION_KEY = "ugc:gerar:session";
+const STORAGE_CASES_REF = "ugc:referencias:cases";
+
+// ─── Types (Central de Referências) ───────────────────────────────────────────
+
+interface UGCItemRef {
+  id: string;
+  creator: string;
+  videoUrl: string;
+  roteiro: string;
+  addedAt: string;
+}
+
+interface CaseTurboRef {
+  id: string;
+  nome: string;
+  nichoId: string;
+  subnicho: string;
+  ugcs: UGCItemRef[];
+  addedAt: string;
+}
 
 // ─── Banco de Hooks ────────────────────────────────────────────────────────────
 
@@ -179,8 +199,13 @@ function GerarPageInner() {
   const [angulosSelecionados, setAngulosSelecionados] = useState<string[]>([]);
   const [modoGeracao, setModoGeracao] = useState<"padrao" | "inspirado">("padrao");
   const [roteiroReferencia, setRoteiroReferencia] = useState("");
+  const [roteiroReferenciaSource, setRoteiroReferenciaSource] = useState(""); // "NomeCase — Creator"
   const [showModalReferencia, setShowModalReferencia] = useState(false);
   const [roteiroReferenciaRascunho, setRoteiroReferenciaRascunho] = useState("");
+  const [abaModalReferencia, setAbaModalReferencia] = useState<"central" | "manual">("central");
+  const [buscaCaseRef, setBuscaCaseRef] = useState("");
+  const [casesReferencia, setCasesReferencia] = useState<CaseTurboRef[]>([]);
+  const [ugcExpandidoId, setUgcExpandidoId] = useState<string | null>(null);
 
   useEffect(() => {
     const todos = getClientes();
@@ -244,6 +269,14 @@ function GerarPageInner() {
       }));
     } catch { /* ignore */ }
   }, [estado, roteiros, cenesGeradas, angulosSelecionados, avatarSelecionadoId, modoGeracao, roteiroReferencia]);
+
+  // Carrega cases da Central de Referências do localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_CASES_REF);
+      if (raw) setCasesReferencia(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [showModalReferencia]); // recarrega toda vez que o modal abre
 
   function handleClienteChange(clienteId: string) {
     if (!clienteId) return;
@@ -393,6 +426,15 @@ function GerarPageInner() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? "Erro ao gerar cenas."); return; }
+      // Persiste cenas imediatamente — antes do setState — para sobreviver a navegações
+      try {
+        const raw = sessionStorage.getItem(GERAR_SESSION_KEY);
+        if (raw) {
+          const session = JSON.parse(raw);
+          session.cenesGeradas = { ...(session.cenesGeradas ?? {}), [roteiro.id]: data.cenas };
+          sessionStorage.setItem(GERAR_SESSION_KEY, JSON.stringify(session));
+        }
+      } catch { /* ignore */ }
       setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: data.cenas }));
     } catch {
       toast.error("Erro de conexão ao gerar cenas.");
@@ -514,7 +556,16 @@ function GerarPageInner() {
       const currentCtaCena = currentCenas[currentCenas.length - 1];
       const mergedCta = ctaLocked && currentCtaCena ? currentCtaCena : newCtaCena;
 
-      setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: [hookCena, ...mergedBodyCenas, mergedCta] }));
+      const novasCenas = [hookCena, ...mergedBodyCenas, mergedCta];
+      try {
+        const raw = sessionStorage.getItem(GERAR_SESSION_KEY);
+        if (raw) {
+          const session = JSON.parse(raw);
+          session.cenesGeradas = { ...(session.cenesGeradas ?? {}), [roteiro.id]: novasCenas };
+          sessionStorage.setItem(GERAR_SESSION_KEY, JSON.stringify(session));
+        }
+      } catch { /* ignore */ }
+      setCenesGeradas((prev) => ({ ...prev, [roteiro.id]: novasCenas }));
       toast.success("Cenas regeneradas!");
     } catch {
       toast.error("Erro de conexão ao regenerar cenas.");
@@ -540,8 +591,10 @@ function GerarPageInner() {
             onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="p-6 pb-4 border-b border-gray-100">
-              <div className="flex items-start justify-between gap-4">
+
+            {/* Header */}
+            <div className="p-6 pb-0">
+              <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center shrink-0">
@@ -549,8 +602,8 @@ function GerarPageInner() {
                     </div>
                     Roteiro de referência
                   </h3>
-                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                    Cole um roteiro validado de qualquer cliente ou nicho. A IA vai criar um novo roteiro profundamente inspirado na estrutura dos hooks, body e CTA — adaptado ao cliente e produto selecionados.
+                  <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                    Escolha um roteiro validado da Central de Referências ou cole manualmente. A IA vai recriar a estrutura adaptada ao cliente selecionado.
                   </p>
                 </div>
                 <button
@@ -560,39 +613,216 @@ function GerarPageInner() {
                   <X size={15} />
                 </button>
               </div>
-            </div>
-            <div className="p-6 flex-1 overflow-auto">
-              <textarea
-                value={roteiroReferenciaRascunho}
-                onChange={(e) => setRoteiroReferenciaRascunho(e.target.value)}
-                placeholder={"Hook 1: ...\nHook 2: ...\n\nCena 1: ...\nCena 2: ...\nCena 3: ...\nCena 4: ...\n\nCTA: ..."}
-                rows={14}
-                autoFocus
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent resize-none"
-              />
-            </div>
-            <div className="p-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-4">
-              <p className="text-xs text-gray-400">O roteiro pode ser de qualquer nicho — a estrutura é o que importa.</p>
-              <div className="flex gap-3 shrink-0">
+
+              {/* Tabs */}
+              <div className="flex rounded-xl border border-gray-100 bg-gray-50 p-1 gap-1">
                 <button
-                  onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
-                  className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  type="button"
+                  onClick={() => setAbaModalReferencia("central")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    abaModalReferencia === "central"
+                      ? "bg-white text-slate-700 shadow-sm ring-1 ring-gray-200"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
                 >
-                  Cancelar
+                  <Trophy size={11} />
+                  Central de Referências
                 </button>
                 <button
-                  onClick={() => {
-                    setRoteiroReferencia(roteiroReferenciaRascunho.trim());
-                    setShowModalReferencia(false);
-                  }}
-                  disabled={!roteiroReferenciaRascunho.trim()}
-                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                  type="button"
+                  onClick={() => setAbaModalReferencia("manual")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    abaModalReferencia === "manual"
+                      ? "bg-white text-slate-700 shadow-sm ring-1 ring-gray-200"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
                 >
-                  <Sparkles size={13} />
-                  Confirmar
+                  <FileText size={11} />
+                  Inserir manualmente
                 </button>
               </div>
             </div>
+
+            {/* Aba: Central de Referências */}
+            {abaModalReferencia === "central" && (
+              <div className="flex flex-col flex-1 overflow-hidden p-6 pt-4 gap-3">
+                {/* Busca */}
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={buscaCaseRef}
+                    onChange={(e) => setBuscaCaseRef(e.target.value)}
+                    placeholder="Buscar case..."
+                    className="w-full h-9 pl-8 pr-3 rounded-lg border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Lista de cases */}
+                <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+                  {casesReferencia.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+                        <BookOpen size={20} className="text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Nenhum roteiro validado</p>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed max-w-xs">
+                          Adicione cases na <span className="font-semibold text-amber-600">Central de Referências</span> para poder selecioná-los aqui.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (() => {
+                    const caseFiltrados = casesReferencia.filter((c) =>
+                      c.nome.toLowerCase().includes(buscaCaseRef.toLowerCase()) ||
+                      c.subnicho.toLowerCase().includes(buscaCaseRef.toLowerCase())
+                    );
+                    if (caseFiltrados.length === 0) {
+                      return (
+                        <div className="flex items-center justify-center py-10">
+                          <p className="text-sm text-gray-400">Nenhum case encontrado para &ldquo;{buscaCaseRef}&rdquo;</p>
+                        </div>
+                      );
+                    }
+                    return caseFiltrados.map((caso) => (
+                      <div key={caso.id} className="rounded-xl border border-gray-100 bg-gray-50/50 overflow-hidden">
+                        {/* Case header */}
+                        <div className="px-4 py-3 flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center shrink-0">
+                            <Trophy size={12} className="text-white" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-gray-800 truncate">{caso.nome}</p>
+                            <p className="text-xs text-gray-400">{caso.subnicho}</p>
+                          </div>
+                          <span className="text-xs text-gray-400 shrink-0">
+                            {caso.ugcs?.length ?? 0} roteiro{(caso.ugcs?.length ?? 0) !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        {/* UGC items */}
+                        {(caso.ugcs ?? []).length > 0 ? (
+                          <div className="border-t border-gray-100 divide-y divide-gray-100">
+                            {(caso.ugcs ?? []).map((ugc) => {
+                              const expandido = ugcExpandidoId === ugc.id;
+                              return (
+                                <div key={ugc.id} className="bg-white border-t border-gray-100 first:border-t-0">
+                                  {/* Linha principal */}
+                                  <div className="px-4 py-3 hover:bg-amber-50/40 transition-colors group">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5 mb-1">
+                                          <User size={10} className="text-gray-400 shrink-0" />
+                                          {ugc.creator || "Creator"}
+                                        </p>
+                                        {ugc.roteiro ? (
+                                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                            {ugc.roteiro.slice(0, 120)}{ugc.roteiro.length > 120 ? "…" : ""}
+                                          </p>
+                                        ) : (
+                                          <p className="text-xs text-gray-400 italic">Roteiro não cadastrado</p>
+                                        )}
+                                      </div>
+                                      {ugc.roteiro && (
+                                        <div className="shrink-0 flex items-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setUgcExpandidoId(expandido ? null : ugc.id)}
+                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                                          >
+                                            <ChevronDown size={11} className={`transition-transform ${expandido ? "rotate-180" : ""}`} />
+                                            {expandido ? "Ocultar" : "Ver roteiro"}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setRoteiroReferencia(ugc.roteiro);
+                                              setRoteiroReferenciaSource(`${caso.nome} — ${ugc.creator || "Creator"}`);
+                                              setShowModalReferencia(false);
+                                            }}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500 transition-all shadow-sm"
+                                          >
+                                            <Sparkles size={10} />
+                                            Usar este
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Roteiro completo expandido */}
+                                  {expandido && ugc.roteiro && (
+                                    <div className="px-4 pb-4 bg-amber-50/30 border-t border-amber-100">
+                                      <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans mt-3 max-h-64 overflow-y-auto rounded-lg bg-white border border-amber-100 px-3 py-3">
+                                        {ugc.roteiro}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="border-t border-gray-100 px-4 py-3 bg-white">
+                            <p className="text-xs text-gray-400 italic">Nenhum UGC cadastrado neste case.</p>
+                          </div>
+                        )}
+                      </div>
+                    ));
+                  })()}
+                </div>
+
+                {/* Footer */}
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <p className="text-xs text-gray-400">A estrutura do roteiro é o que importa — não o nicho.</p>
+                  <button
+                    onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
+                    className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Aba: Inserir manualmente */}
+            {abaModalReferencia === "manual" && (
+              <>
+                <div className="p-6 pt-4 flex-1 overflow-auto">
+                  <textarea
+                    value={roteiroReferenciaRascunho}
+                    onChange={(e) => setRoteiroReferenciaRascunho(e.target.value)}
+                    placeholder={"Hook 1: ...\nHook 2: ...\n\nCena 1: ...\nCena 2: ...\nCena 3: ...\nCena 4: ...\n\nCTA: ..."}
+                    rows={14}
+                    autoFocus
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent resize-none"
+                  />
+                </div>
+                <div className="p-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-4">
+                  <p className="text-xs text-gray-400">O roteiro pode ser de qualquer nicho — a estrutura é o que importa.</p>
+                  <div className="flex gap-3 shrink-0">
+                    <button
+                      onClick={() => { setShowModalReferencia(false); if (!roteiroReferencia) setModoGeracao("padrao"); }}
+                      className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRoteiroReferencia(roteiroReferenciaRascunho.trim());
+                        setRoteiroReferenciaSource(""); // manual: sem fonte
+                        setShowModalReferencia(false);
+                      }}
+                      disabled={!roteiroReferenciaRascunho.trim()}
+                      className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                    >
+                      <Sparkles size={13} />
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}
@@ -651,14 +881,19 @@ function GerarPageInner() {
                   }`}
                 >
                   <Sparkles size={11} />
-                  Inspirado
+                  Roteiro Turbo
                 </button>
               </div>
 
               {modoGeracao === "inspirado" && (
                 <button
                   type="button"
-                  onClick={() => { setRoteiroReferenciaRascunho(roteiroReferencia); setShowModalReferencia(true); }}
+                  onClick={() => {
+                    setRoteiroReferenciaRascunho(roteiroReferencia);
+                    setAbaModalReferencia(roteiroReferenciaSource ? "central" : "central");
+                    setBuscaCaseRef("");
+                    setShowModalReferencia(true);
+                  }}
                   className={`w-full text-left rounded-xl border transition-all px-3 py-2.5 ${
                     roteiroReferencia
                       ? "border-amber-200 bg-amber-50 hover:bg-amber-100"
@@ -669,19 +904,26 @@ function GerarPageInner() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
-                          <FileText size={11} />
+                          <Trophy size={11} />
                           Roteiro de referência ativo
                         </p>
-                        <p className="text-xs text-amber-600 mt-0.5 line-clamp-2 leading-relaxed">
-                          {roteiroReferencia.slice(0, 100)}{roteiroReferencia.length > 100 ? "…" : ""}
-                        </p>
+                        {roteiroReferenciaSource ? (
+                          <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                            <User size={9} className="shrink-0" />
+                            {roteiroReferenciaSource}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-amber-600 mt-0.5 line-clamp-1 leading-relaxed">
+                            {roteiroReferencia.slice(0, 80)}{roteiroReferencia.length > 80 ? "…" : ""}
+                          </p>
+                        )}
                       </div>
-                      <span className="text-xs text-amber-500 shrink-0 font-medium pt-0.5">Editar</span>
+                      <span className="text-xs text-amber-500 shrink-0 font-medium pt-0.5">Trocar</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2 py-1">
                       <Sparkles size={12} className="text-amber-500" />
-                      <span className="text-xs font-medium text-amber-600">Colar roteiro de referência</span>
+                      <span className="text-xs font-medium text-amber-600">Selecionar roteiro de referência</span>
                     </div>
                   )}
                 </button>

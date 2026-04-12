@@ -20,15 +20,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ClienteCard } from "@/components/cards/ClienteCard";
 import { ClienteForm } from "@/components/forms/ClienteForm";
-import { Cliente, Produto } from "@/types";
+import { Cliente } from "@/types";
 import { getClientes, getProdutos, deleteCliente } from "@/lib/storage";
-import { Plus, Search, Users, BookOpen, Package, X } from "lucide-react";
+import { Plus, Search, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtos, setProdutos] = useState<ReturnType<typeof getProdutos>>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Cliente | undefined>(undefined);
@@ -41,14 +41,9 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const clientesFiltrados = clientes.filter((c) =>
-    c.nome.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const guiasCompletos = clientes.filter((c) => {
-    const g = c.guiaMarca;
-    return !!(g.tomDeVoz && g.publicoAlvo && g.diferenciais && g.posicionamento);
-  }).length;
+  const clientesFiltrados = clientes
+    .filter((c) => c.nome.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   function handleEdit(cliente: Cliente) {
     setEditTarget(cliente);
@@ -98,23 +93,6 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* ── Stats bar ───────────────────────────────────────────────────── */}
-      {clientes.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap mb-5">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white ring-1 ring-gray-200/80 text-xs font-medium text-gray-600">
-            <Users size={12} className="text-gray-400" />
-            {clientes.length} {clientes.length === 1 ? "cliente" : "clientes"}
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white ring-1 ring-gray-200/80 text-xs font-medium text-gray-600">
-            <BookOpen size={12} className="text-emerald-500" />
-            {guiasCompletos} guia{guiasCompletos !== 1 ? "s" : ""} completo{guiasCompletos !== 1 ? "s" : ""}
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white ring-1 ring-gray-200/80 text-xs font-medium text-gray-600">
-            <Package size={12} className="text-gray-400" />
-            {produtos.length} produto{produtos.length !== 1 ? "s" : ""}
-          </div>
-        </div>
-      )}
 
       {/* ── Search ──────────────────────────────────────────────────────── */}
       {clientes.length > 0 && (

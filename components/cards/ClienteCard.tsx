@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Cliente, Produto } from "@/types";
-import { ArrowRight, Package, Pencil, Trash2 } from "lucide-react";
+import { ArrowRight, Package, Pencil, Trash2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ function getInitials(nome: string) {
 }
 
 function guiaScore(guia: Cliente["guiaMarca"]) {
-  return [guia.tomDeVoz, guia.publicoAlvo, guia.diferenciais, guia.posicionamento]
+  return [guia.tomDeVoz, guia.observacoes, guia.diferenciais, guia.posicionamento]
     .filter(Boolean).length;
 }
 
@@ -60,6 +60,7 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
   const score    = guiaScore(cliente.guiaMarca);
   const guiaOk   = score >= 4;
   const qtd      = produtos.length;
+  const qtdAvatares = (cliente.avatares ?? []).length;
 
   return (
     <Link href={`/cliente/${cliente.id}`} className="group block" tabIndex={0}>
@@ -125,15 +126,18 @@ export function ClienteCard({ cliente, produtos, onEdit, onDelete }: ClienteCard
               {qtd} {qtd === 1 ? "produto" : "produtos"}
             </span>
 
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600">
+              <Users size={11} className="shrink-0" />
+              {qtdAvatares} {qtdAvatares === 1 ? "avatar" : "avatares"}
+            </span>
+
           </div>
 
-          {/* Público-alvo snippet */}
-          {cliente.guiaMarca.publicoAlvo ? (
+          {/* Personalidade snippet */}
+          {cliente.guiaMarca.diferenciais && (
             <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-              {cliente.guiaMarca.publicoAlvo}
+              {cliente.guiaMarca.diferenciais}
             </p>
-          ) : (
-            <p className="text-xs text-gray-300 italic">Público-alvo não definido ainda.</p>
           )}
 
         </div>
