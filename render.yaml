@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ugc-turbo-roberto
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: ANTHROPIC_API_KEY
+        sync: false
