@@ -537,10 +537,10 @@ function GerarPageInner() {
 
       // Map locked body cenas to their relative positions within the current body
       const currentCenas = cenesGeradas[roteiro.id] ?? [];
-      const currentBodyCenas = currentCenas.slice(1, -1);
+      const existingBodyCenas = currentCenas.slice(1, -1);
       const lockedRelPosMap = new Map<number, CenaRoteiro>();
       lockedBodyCenas.forEach((lc) => {
-        const relPos = currentBodyCenas.findIndex((c) => c.cena === lc.cena);
+        const relPos = existingBodyCenas.findIndex((c) => c.cena === lc.cena);
         if (relPos !== -1) lockedRelPosMap.set(relPos, lc);
       });
 
