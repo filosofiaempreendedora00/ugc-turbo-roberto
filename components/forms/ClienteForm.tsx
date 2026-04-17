@@ -30,9 +30,9 @@ export function ClienteForm({ cliente, onSuccess, onCancel }: ClienteFormProps) 
     try {
       let result: Cliente;
       if (cliente) {
-        result = updateCliente(cliente.id, { nome: nome.trim() });
+        result = await updateCliente(cliente.id, { nome: nome.trim() });
       } else {
-        result = createCliente(nome.trim());
+        result = await createCliente(nome.trim());
       }
       onSuccess(result);
     } catch {

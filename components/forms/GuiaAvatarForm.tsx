@@ -284,8 +284,8 @@ export function GuiaAvatarForm({ clienteId, avatar, onSuccess, onBack, produtos 
         objecoes,
       };
       const updated = avatar
-        ? updateAvatar(clienteId, avatar.id, data)
-        : addAvatar(clienteId, data);
+        ? await updateAvatar(clienteId, avatar.id, data)
+        : await addAvatar(clienteId, data);
       setSaved(true);
       onSuccess(updated);
     } finally {

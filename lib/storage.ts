@@ -1,106 +1,80 @@
 import { Cliente, Produto, Roteiro, GuiaMarca, GuiaProduto, AvatarICP } from "@/types";
 
-const KEYS = {
-  CLIENTES: "ugc:clientes",
-  PRODUTOS: "ugc:produtos",
-  ROTEIROS: "ugc:roteiros",
-} as const;
-
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function now(): string {
-  return new Date().toISOString();
-}
-
-function safeGet<T>(key: string): T[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    return JSON.parse(raw) as T[];
-  } catch {
-    return [];
+async function req<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Erro ${res.status}`);
   }
-}
-
-function safeSet<T>(key: string, data: T[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error("Erro ao salvar no localStorage:", e);
-  }
+  return res.json();
 }
 
 // ─── CLIENTES ────────────────────────────────────────────────────────────────
 
-export function getClientes(): Cliente[] {
-  return safeGet<Cliente>(KEYS.CLIENTES);
+export async function getClientes(): Promise<Cliente[]> {
+  return req<Cliente[]>("/api/clientes");
 }
 
-export function getClienteById(id: string): Cliente | undefined {
-  return getClientes().find((c) => c.id === id);
+export async function getClienteById(id: string): Promise<Cliente | undefined> {
+  try {
+    return await req<Cliente>(`/api/clientes/${id}`);
+  } catch {
+    return undefined;
+  }
 }
 
-export function createCliente(nome: string): Cliente {
-  const cliente: Cliente = {
-    id: generateId(),
-    nome,
-    guiaMarca: {
-      nome,
-      tomDeVoz: "",
-      publicoAlvo: "",
-      diferenciais: "",
-      posicionamento: "",
-      observacoes: "",
-    },
-    avatares: [],
-    criadoEm: now(),
-    atualizadoEm: now(),
-  };
-  const lista = getClientes();
-  lista.push(cliente);
-  safeSet(KEYS.CLIENTES, lista);
-  return cliente;
+export async function createCliente(nome: string): Promise<Cliente> {
+  return req<Cliente>("/api/clientes", {
+    method: "POST",
+    body: JSON.stringify({ nome }),
+  });
 }
 
-export function updateCliente(id: string, dados: Partial<Omit<Cliente, "id" | "criadoEm">>): Cliente {
-  const lista = getClientes();
-  const idx = lista.findIndex((c) => c.id === id);
-  if (idx === -1) throw new Error("Cliente não encontrado");
-  lista[idx] = { ...lista[idx], ...dados, atualizadoEm: now() };
-  safeSet(KEYS.CLIENTES, lista);
-  return lista[idx];
+export async function updateCliente(
+  id: string,
+  dados: Partial<Omit<Cliente, "id" | "criadoEm">>
+): Promise<Cliente> {
+  return req<Cliente>(`/api/clientes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(dados),
+  });
 }
 
-export function updateGuiaMarca(clienteId: string, guia: GuiaMarca): Cliente {
+export async function updateGuiaMarca(clienteId: string, guia: GuiaMarca): Promise<Cliente> {
   return updateCliente(clienteId, { guiaMarca: guia });
 }
 
-export function deleteCliente(id: string): void {
-  const clientes = getClientes().filter((c) => c.id !== id);
-  safeSet(KEYS.CLIENTES, clientes);
-  const produtos = getProdutos().filter((p) => p.clienteId !== id);
-  safeSet(KEYS.PRODUTOS, produtos);
+export async function deleteCliente(id: string): Promise<void> {
+  await req(`/api/clientes/${id}`, { method: "DELETE" });
 }
 
 // ─── AVATARES ICP ─────────────────────────────────────────────────────────────
 
-export function getAvataresByCliente(clienteId: string): AvatarICP[] {
-  return getClienteById(clienteId)?.avatares ?? [];
+export async function getAvataresByCliente(clienteId: string): Promise<AvatarICP[]> {
+  const cliente = await getClienteById(clienteId);
+  return cliente?.avatares ?? [];
 }
 
-export function addAvatar(clienteId: string, dados: Omit<AvatarICP, "id">): Cliente {
-  const cliente = getClienteById(clienteId);
+export async function addAvatar(clienteId: string, dados: Omit<AvatarICP, "id">): Promise<Cliente> {
+  const cliente = await getClienteById(clienteId);
   if (!cliente) throw new Error("Cliente não encontrado");
   const avatar: AvatarICP = { id: generateId(), ...dados };
   return updateCliente(clienteId, { avatares: [...(cliente.avatares ?? []), avatar] });
 }
 
-export function updateAvatar(clienteId: string, avatarId: string, dados: Partial<Omit<AvatarICP, "id">>): Cliente {
-  const cliente = getClienteById(clienteId);
+export async function updateAvatar(
+  clienteId: string,
+  avatarId: string,
+  dados: Partial<Omit<AvatarICP, "id">>
+): Promise<Cliente> {
+  const cliente = await getClienteById(clienteId);
   if (!cliente) throw new Error("Cliente não encontrado");
   const avatares = (cliente.avatares ?? []).map((a) =>
     a.id === avatarId ? { ...a, ...dados } : a
@@ -108,8 +82,8 @@ export function updateAvatar(clienteId: string, avatarId: string, dados: Partial
   return updateCliente(clienteId, { avatares });
 }
 
-export function deleteAvatar(clienteId: string, avatarId: string): Cliente {
-  const cliente = getClienteById(clienteId);
+export async function deleteAvatar(clienteId: string, avatarId: string): Promise<Cliente> {
+  const cliente = await getClienteById(clienteId);
   if (!cliente) throw new Error("Cliente não encontrado");
   const avatares = (cliente.avatares ?? []).filter((a) => a.id !== avatarId);
   return updateCliente(clienteId, { avatares });
@@ -117,95 +91,64 @@ export function deleteAvatar(clienteId: string, avatarId: string): Cliente {
 
 // ─── PRODUTOS ────────────────────────────────────────────────────────────────
 
-const EMPTY_GUIA: GuiaProduto = {
-  descricao: "", beneficios: "", doresQueResolve: "",
-  diferenciais: "", oferta: "", observacoes: "",
-};
-
-export function getProdutos(): Produto[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return safeGet<any>(KEYS.PRODUTOS).map((p: any) => ({
-    ...p,
-    // migrate legacy key "guiaProduto" → "guia"
-    guia: p.guia ?? p.guiaProduto ?? { ...EMPTY_GUIA },
-  })) as Produto[];
+export async function getProdutos(): Promise<Produto[]> {
+  return req<Produto[]>("/api/produtos");
 }
 
-export function getProdutosByCliente(clienteId: string): Produto[] {
-  return getProdutos().filter((p) => p.clienteId === clienteId);
+export async function getProdutosByCliente(clienteId: string): Promise<Produto[]> {
+  return req<Produto[]>(`/api/produtos?clienteId=${encodeURIComponent(clienteId)}`);
 }
 
-export function getProdutoById(id: string): Produto | undefined {
-  return getProdutos().find((p) => p.id === id);
+export async function getProdutoById(id: string): Promise<Produto | undefined> {
+  try {
+    return await req<Produto>(`/api/produtos/${id}`);
+  } catch {
+    return undefined;
+  }
 }
 
-export function createProduto(clienteId: string, nome: string): Produto {
-  const produto: Produto = {
-    id: generateId(),
-    clienteId,
-    nome,
-    guia: {
-      descricao: "",
-      beneficios: "",
-      doresQueResolve: "",
-      diferenciais: "",
-      oferta: "",
-      observacoes: "",
-    },
-    criadoEm: now(),
-    atualizadoEm: now(),
-  };
-  const lista = getProdutos();
-  lista.push(produto);
-  safeSet(KEYS.PRODUTOS, lista);
-  return produto;
+export async function createProduto(clienteId: string, nome: string): Promise<Produto> {
+  return req<Produto>("/api/produtos", {
+    method: "POST",
+    body: JSON.stringify({ clienteId, nome }),
+  });
 }
 
-export function updateProduto(id: string, dados: Partial<Omit<Produto, "id" | "clienteId" | "criadoEm">>): Produto {
-  const lista = getProdutos();
-  const idx = lista.findIndex((p) => p.id === id);
-  if (idx === -1) throw new Error("Produto não encontrado");
-  lista[idx] = { ...lista[idx], ...dados, atualizadoEm: now() };
-  safeSet(KEYS.PRODUTOS, lista);
-  return lista[idx];
+export async function updateProduto(
+  id: string,
+  dados: Partial<Omit<Produto, "id" | "clienteId" | "criadoEm">>
+): Promise<Produto> {
+  return req<Produto>(`/api/produtos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(dados),
+  });
 }
 
-export function updateGuiaProduto(produtoId: string, guia: GuiaProduto): Produto {
+export async function updateGuiaProduto(produtoId: string, guia: GuiaProduto): Promise<Produto> {
   return updateProduto(produtoId, { guia });
 }
 
-export function deleteProduto(id: string): void {
-  const lista = getProdutos().filter((p) => p.id !== id);
-  safeSet(KEYS.PRODUTOS, lista);
+export async function deleteProduto(id: string): Promise<void> {
+  await req(`/api/produtos/${id}`, { method: "DELETE" });
 }
 
 // ─── ROTEIROS ────────────────────────────────────────────────────────────────
 
-export function getRoteiros(): Roteiro[] {
-  return safeGet<Roteiro>(KEYS.ROTEIROS);
+export async function getRoteiros(): Promise<Roteiro[]> {
+  return req<Roteiro[]>("/api/roteiros");
 }
 
-export function getRoteirosByCliente(clienteId: string): Roteiro[] {
-  return getRoteiros().filter((r) => r.clienteId === clienteId);
+export async function getRoteirosByCliente(clienteId: string): Promise<Roteiro[]> {
+  return req<Roteiro[]>(`/api/roteiros?clienteId=${encodeURIComponent(clienteId)}`);
 }
 
-export function saveRoteiro(roteiro: Omit<Roteiro, "id" | "geradoEm">): Roteiro {
-  const novo: Roteiro = {
-    ...roteiro,
-    id: generateId(),
-    geradoEm: now(),
-  };
-  const lista = getRoteiros();
-  lista.push(novo);
-  safeSet(KEYS.ROTEIROS, lista);
-  return novo;
+export async function saveRoteiro(roteiro: Omit<Roteiro, "id" | "geradoEm">): Promise<Roteiro> {
+  return req<Roteiro>("/api/roteiros", {
+    method: "POST",
+    body: JSON.stringify(roteiro),
+  });
 }
 
-export function deleteRoteiro(id: string): void {
-  const lista = getRoteiros().filter((r) => r.id !== id);
-  safeSet(KEYS.ROTEIROS, lista);
-}
-
-export function clearAllData(): void {
-  Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
+export async function deleteRoteiro(id: string): Promise<void> {
+  await req(`/api/roteiros/${id}`, { method: "DELETE" });
 }

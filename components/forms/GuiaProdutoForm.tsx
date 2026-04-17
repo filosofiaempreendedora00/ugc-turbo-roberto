@@ -181,7 +181,7 @@ export function GuiaProdutoForm({ produto, onSuccess, onBack }: GuiaProdutoFormP
   async function handleSave(mode: "stay" | "back" = "stay") {
     setLoading(true);
     try {
-      const updated = updateGuiaProduto(produto.id, {
+      const updated = await updateGuiaProduto(produto.id, {
         doresQueResolve: problema.trim(),
         beneficios: JSON.stringify(beneficios),
         diferenciais: diferencial.trim(),

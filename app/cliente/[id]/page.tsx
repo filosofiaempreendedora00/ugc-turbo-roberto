@@ -39,11 +39,14 @@ export default function ClientePage() {
   const [activeAvatarId, setActiveAvatarId] = useState<string | null>(null);
   const [deleteAvatarId, setDeleteAvatarId] = useState<string | null>(null);
 
-  function loadData() {
-    const c = getClienteById(clienteId);
+  async function loadData() {
+    const [c, ps] = await Promise.all([
+      getClienteById(clienteId),
+      getProdutosByCliente(clienteId),
+    ]);
     if (!c) { router.replace("/dashboard"); return; }
     setCliente(c);
-    setProdutos(getProdutosByCliente(clienteId));
+    setProdutos(ps);
   }
 
   const autoOpenedRef = useRef(false);
@@ -87,11 +90,15 @@ export default function ClientePage() {
     toast.success("Guia do produto salvo!");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteId) return;
-    deleteProduto(deleteId);
-    toast.success("Produto removido.");
-    loadData();
+    try {
+      await deleteProduto(deleteId);
+      toast.success("Produto removido.");
+      await loadData();
+    } catch {
+      toast.error("Erro ao remover produto.");
+    }
     setDeleteId(null);
     setActiveProdutoId(null);
   }
@@ -109,11 +116,15 @@ export default function ClientePage() {
     if (isNew) setActiveAvatarId(null);
   }
 
-  function handleDeleteAvatarConfirm() {
+  async function handleDeleteAvatarConfirm() {
     if (!deleteAvatarId) return;
-    const updated = deleteAvatar(clienteId, deleteAvatarId);
-    setCliente(updated);
-    toast.success("Avatar removido.");
+    try {
+      const updated = await deleteAvatar(clienteId, deleteAvatarId);
+      setCliente(updated);
+      toast.success("Avatar removido.");
+    } catch {
+      toast.error("Erro ao remover avatar.");
+    }
     setDeleteAvatarId(null);
     setActiveAvatarId(null);
   }

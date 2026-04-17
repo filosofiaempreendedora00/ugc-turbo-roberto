@@ -223,7 +223,7 @@ export function GuiaMarcaForm({
     if (!nome.trim()) return;
     setLoading(true);
     try {
-      const updated = updateGuiaMarca(cliente.id, buildGuia());
+      const updated = await updateGuiaMarca(cliente.id, buildGuia());
       setSaved(true);
       onSuccess(updated);
       if (mode === "next" && onNext) {

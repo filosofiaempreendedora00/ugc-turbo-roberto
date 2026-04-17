@@ -19,13 +19,16 @@ export default function ProdutoPage() {
   const [cliente, setCliente]       = useState<Cliente | null>(null);
   const [todosProdutos, setTodosProdutos] = useState<Produto[]>([]);
 
-  function loadData() {
-    const p = getProdutoById(produtoId);
+  async function loadData() {
+    const p = await getProdutoById(produtoId);
     if (!p) { router.replace("/dashboard"); return; }
     setProduto(p);
-    const c = getClienteById(p.clienteId);
+    const [c, ps] = await Promise.all([
+      getClienteById(p.clienteId),
+      getProdutosByCliente(p.clienteId),
+    ]);
     if (c) setCliente(c);
-    setTodosProdutos(getProdutosByCliente(p.clienteId));
+    setTodosProdutos(ps);
   }
 
   useEffect(() => { loadData(); }, [produtoId]);

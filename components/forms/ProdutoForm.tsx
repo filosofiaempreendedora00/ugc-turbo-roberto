@@ -31,9 +31,9 @@ export function ProdutoForm({ clienteId, produto, onSuccess, onCancel }: Produto
     try {
       let result: Produto;
       if (produto) {
-        result = updateProduto(produto.id, { nome: nome.trim() });
+        result = await updateProduto(produto.id, { nome: nome.trim() });
       } else {
-        result = createProduto(clienteId, nome.trim());
+        result = await createProduto(clienteId, nome.trim());
       }
       onSuccess(result);
     } catch {

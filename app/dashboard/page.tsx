@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ClienteCard } from "@/components/cards/ClienteCard";
 import { ClienteForm } from "@/components/forms/ClienteForm";
-import { Cliente } from "@/types";
+import { Cliente, Produto } from "@/types";
 import { getClientes, getProdutos, deleteCliente } from "@/lib/storage";
 import { Plus, Search, Users, X } from "lucide-react";
 import { toast } from "sonner";
@@ -28,15 +28,16 @@ import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [produtos, setProdutos] = useState<ReturnType<typeof getProdutos>>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Cliente | undefined>(undefined);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  function loadData() {
-    setClientes(getClientes());
-    setProdutos(getProdutos());
+  async function loadData() {
+    const [cs, ps] = await Promise.all([getClientes(), getProdutos()]);
+    setClientes(cs);
+    setProdutos(ps);
   }
 
   useEffect(() => { loadData(); }, []);
@@ -55,11 +56,15 @@ export default function DashboardPage() {
     setDialogOpen(true);
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteId) return;
-    deleteCliente(deleteId);
-    toast.success("Cliente removido com sucesso.");
-    loadData();
+    try {
+      await deleteCliente(deleteId);
+      toast.success("Cliente removido com sucesso.");
+      await loadData();
+    } catch {
+      toast.error("Erro ao remover cliente.");
+    }
     setDeleteId(null);
   }
 

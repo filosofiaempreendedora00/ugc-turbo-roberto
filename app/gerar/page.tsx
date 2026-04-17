@@ -208,50 +208,54 @@ function GerarPageInner() {
   const [ugcExpandidoId, setUgcExpandidoId] = useState<string | null>(null);
 
   useEffect(() => {
-    const todos = getClientes();
-    setClientes(todos);
-    const clienteIdParam = searchParams.get("clienteId") || "";
-    const produtoIdParam = searchParams.get("produtoId") || "";
+    (async () => {
+      const todos = await getClientes();
+      setClientes(todos);
+      const clienteIdParam = searchParams.get("clienteId") || "";
+      const produtoIdParam = searchParams.get("produtoId") || "";
 
-    if (clienteIdParam) {
-      // URL params têm prioridade — navegação vinda de outra tela
-      dispatch({ type: "SET_CAMPO", campo: "clienteId", valor: clienteIdParam });
-      const prods = getProdutosByCliente(clienteIdParam);
-      setProdutos(prods);
-      if (produtoIdParam) {
-        dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: produtoIdParam });
-      }
-    } else {
-      // Sem URL params — tenta restaurar sessão anterior
-      try {
-        const saved = sessionStorage.getItem(GERAR_SESSION_KEY);
-        if (saved) {
-          const session = JSON.parse(saved);
-          if (session.estado) {
-            (Object.keys(session.estado) as (keyof Estado)[]).forEach((campo) => {
-              dispatch({ type: "SET_CAMPO", campo, valor: session.estado[campo] });
-            });
-            if (session.estado.clienteId) {
-              setProdutos(getProdutosByCliente(session.estado.clienteId));
-              setAvatares(getAvataresByCliente(session.estado.clienteId));
-            }
-            if (session.estado.produtoId) {
-              const prod = getProdutoById(session.estado.produtoId);
-              if (prod) {
-                setBeneficiosTags(parseTags(prod.guia.beneficios));
-                setDoresTags(parseTags(prod.guia.doresQueResolve));
+      if (clienteIdParam) {
+        dispatch({ type: "SET_CAMPO", campo: "clienteId", valor: clienteIdParam });
+        const prods = await getProdutosByCliente(clienteIdParam);
+        setProdutos(prods);
+        if (produtoIdParam) {
+          dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: produtoIdParam });
+        }
+      } else {
+        try {
+          const saved = sessionStorage.getItem(GERAR_SESSION_KEY);
+          if (saved) {
+            const session = JSON.parse(saved);
+            if (session.estado) {
+              (Object.keys(session.estado) as (keyof Estado)[]).forEach((campo) => {
+                dispatch({ type: "SET_CAMPO", campo, valor: session.estado[campo] });
+              });
+              if (session.estado.clienteId) {
+                const [ps, avs] = await Promise.all([
+                  getProdutosByCliente(session.estado.clienteId),
+                  getAvataresByCliente(session.estado.clienteId),
+                ]);
+                setProdutos(ps);
+                setAvatares(avs);
+              }
+              if (session.estado.produtoId) {
+                const prod = await getProdutoById(session.estado.produtoId);
+                if (prod) {
+                  setBeneficiosTags(parseTags(prod.guia.beneficios));
+                  setDoresTags(parseTags(prod.guia.doresQueResolve));
+                }
               }
             }
+            if (session.roteiros?.length) setRoteiros(session.roteiros);
+            if (session.cenesGeradas) setCenesGeradas(session.cenesGeradas);
+            if (session.angulosSelecionados) setAngulosSelecionados(session.angulosSelecionados);
+            if (session.avatarSelecionadoId) setAvatarSelecionadoId(session.avatarSelecionadoId);
+            if (session.modoGeracao) setModoGeracao(session.modoGeracao);
+            if (session.roteiroReferencia) setRoteiroReferencia(session.roteiroReferencia);
           }
-          if (session.roteiros?.length) setRoteiros(session.roteiros);
-          if (session.cenesGeradas) setCenesGeradas(session.cenesGeradas);
-          if (session.angulosSelecionados) setAngulosSelecionados(session.angulosSelecionados);
-          if (session.avatarSelecionadoId) setAvatarSelecionadoId(session.avatarSelecionadoId);
-          if (session.modoGeracao) setModoGeracao(session.modoGeracao);
-          if (session.roteiroReferencia) setRoteiroReferencia(session.roteiroReferencia);
-        }
-      } catch { /* sessionStorage indisponível ou dado corrompido */ }
-    }
+        } catch { /* sessionStorage indisponível ou dado corrompido */ }
+      }
+    })();
   }, [searchParams]);
 
   // Persiste sessão sempre que estado relevante muda.
@@ -278,18 +282,22 @@ function GerarPageInner() {
     } catch { /* ignore */ }
   }, [showModalReferencia]); // recarrega toda vez que o modal abre
 
-  function handleClienteChange(clienteId: string) {
+  async function handleClienteChange(clienteId: string) {
     if (!clienteId) return;
     dispatch({ type: "SET_CAMPO", campo: "clienteId", valor: clienteId });
     dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: "" });
     dispatch({ type: "SET_CAMPO", campo: "icp", valor: "" });
-    setProdutos(getProdutosByCliente(clienteId));
-    setAvatares(getAvataresByCliente(clienteId));
     setAvatarSelecionadoId("");
     setRoteiros([]);
     setDoresTags([]);
     setBeneficiosTags([]);
     setAngulosSelecionados([]);
+    const [ps, avs] = await Promise.all([
+      getProdutosByCliente(clienteId),
+      getAvataresByCliente(clienteId),
+    ]);
+    setProdutos(ps);
+    setAvatares(avs);
   }
 
   function parseTags(raw: string): string[] {
@@ -301,12 +309,12 @@ function GerarPageInner() {
     return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
   }
 
-  function handleProdutoChange(produtoId: string) {
+  async function handleProdutoChange(produtoId: string) {
     if (!produtoId) return;
     dispatch({ type: "SET_CAMPO", campo: "produtoId", valor: produtoId });
     setRoteiros([]);
     setAngulosSelecionados([]);
-    const prod = getProdutoById(produtoId);
+    const prod = await getProdutoById(produtoId);
     if (prod) {
       setBeneficiosTags(parseTags(prod.guia.beneficios));
       setDoresTags(parseTags(prod.guia.doresQueResolve));
@@ -346,8 +354,10 @@ function GerarPageInner() {
 
     resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    const cliente = getClienteById(estado.clienteId);
-    const produto = getProdutoById(estado.produtoId);
+    const [cliente, produto] = await Promise.all([
+      getClienteById(estado.clienteId),
+      getProdutoById(estado.produtoId),
+    ]);
     if (!cliente || !produto) { toast.error("Cliente ou produto não encontrado."); return; }
 
     const config: ConfiguracaoGeracao = {
@@ -400,7 +410,7 @@ function GerarPageInner() {
     }
   }
 
-  async function gerarCenas(roteiro: Roteiro, clienteObj: ReturnType<typeof getClienteById>, produtoObj: ReturnType<typeof getProdutoById>) {
+  async function gerarCenas(roteiro: Roteiro, clienteObj: Cliente | undefined, produtoObj: Produto | undefined) {
     if (!clienteObj || !produtoObj) return;
     setBodyLoading((prev) => ({ ...prev, [roteiro.id]: true }));
     setCtaLoading((prev) => ({ ...prev, [roteiro.id]: true }));
@@ -447,15 +457,19 @@ function GerarPageInner() {
   async function handleGerarCenas(roteiroId: string) {
     const roteiro = roteiros.find((r) => r.id === roteiroId);
     if (!roteiro) return;
-    const cliente = getClienteById(estado.clienteId);
-    const produto = getProdutoById(estado.produtoId);
+    const [cliente, produto] = await Promise.all([
+      getClienteById(estado.clienteId),
+      getProdutoById(estado.produtoId),
+    ]);
     await gerarCenas(roteiro, cliente, produto);
   }
 
   async function handleRegenerateHooks(locked: { index: number; text: string }[]) {
     if (!estado.clienteId || !estado.produtoId || !estado.foco) return;
-    const cliente = getClienteById(estado.clienteId);
-    const produto = getProdutoById(estado.produtoId);
+    const [cliente, produto] = await Promise.all([
+      getClienteById(estado.clienteId),
+      getProdutoById(estado.produtoId),
+    ]);
     if (!cliente || !produto) return;
 
     const config: ConfiguracaoGeracao = {
@@ -497,8 +511,10 @@ function GerarPageInner() {
   async function handleRegenerateCenas(lockedBodyCenas: CenaRoteiro[], ctaLocked: boolean, lockedCta?: CenaRoteiro, feedback?: string, currentBodyCenas?: CenaRoteiro[]) {
     const roteiro = roteiros[0];
     if (!roteiro) return;
-    const cliente = getClienteById(estado.clienteId);
-    const produto = getProdutoById(estado.produtoId);
+    const [cliente, produto] = await Promise.all([
+      getClienteById(estado.clienteId),
+      getProdutoById(estado.produtoId),
+    ]);
     if (!cliente || !produto) return;
 
     if (ctaLocked) {
