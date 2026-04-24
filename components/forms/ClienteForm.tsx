@@ -35,7 +35,8 @@ export function ClienteForm({ cliente, onSuccess, onCancel }: ClienteFormProps) 
         result = await createCliente(nome.trim());
       }
       onSuccess(result);
-    } catch {
+    } catch (e) {
+      console.error("[ClienteForm] Erro ao salvar cliente:", e);
       setError("Erro ao salvar cliente.");
     } finally {
       setLoading(false);
