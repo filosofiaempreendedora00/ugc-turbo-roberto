@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { CenaRoteiro, Cliente, ConfiguracaoGeracao, Produto, Roteiro } from "@/types";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 const client = new Anthropic();
 
@@ -568,6 +570,8 @@ Gere o roteiro completo: cena 1 com o hook mais forte, cenas 2 a 6 ou 7 formando
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   try {
     const { cliente, produto, config, roteiro, ctasDeReferencia, feedback, roteiroReferencia, currentBodyCenas } = await request.json() as {
       cliente: Cliente;
@@ -603,6 +607,21 @@ export async function POST(request: NextRequest) {
     const jsonStr = (jsonMatch[1] ?? raw).trim();
 
     const cenas: CenaRoteiro[] = JSON.parse(jsonStr);
+
+    await registrar({
+      usuarioId: auth.sessao.sub,
+      usuarioEmail: auth.sessao.email,
+      acao: "roteiro.regenerar_cenas",
+      recursoTipo: "roteiro",
+      recursoId: roteiro.id,
+      detalhes: {
+        clienteId: cliente.id,
+        produtoId: produto.id,
+        titulo: roteiro.titulo,
+        comFeedback: Boolean(feedback),
+        modoInspirado: Boolean(roteiroReferencia),
+      },
+    });
 
     return NextResponse.json({ cenas });
   } catch (error) {

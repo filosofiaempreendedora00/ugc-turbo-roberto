@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db/client";
 import { asc } from "drizzle-orm";
 import type { Cliente } from "@/types";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +12,15 @@ function generateId(): string {
 }
 
 export async function GET() {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const rows = await db.select().from(schema.clientes).orderBy(asc(schema.clientes.criadoEm));
   return NextResponse.json(rows.map(toCliente));
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const body = await req.json();
   const nome = String(body?.nome ?? "").trim();
   if (!nome) return NextResponse.json({ error: "nome obrigatório" }, { status: 400 });
@@ -23,6 +29,7 @@ export async function POST(req: NextRequest) {
     .insert(schema.clientes)
     .values({
       id: generateId(),
+      userId: auth.sessao.sub,
       nome,
       guiaMarca: {
         nome,
@@ -37,6 +44,14 @@ export async function POST(req: NextRequest) {
       atualizadoEm: now,
     })
     .returning();
+  await registrar({
+    usuarioId: auth.sessao.sub,
+    usuarioEmail: auth.sessao.email,
+    acao: "cliente.criar",
+    recursoTipo: "cliente",
+    recursoId: row.id,
+    detalhes: { nome },
+  });
   return NextResponse.json(toCliente(row));
 }
 

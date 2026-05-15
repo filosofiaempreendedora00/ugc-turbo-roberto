@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { Cliente, ConfiguracaoGeracao, Produto } from "@/types";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 const client = new Anthropic();
 
@@ -460,6 +462,8 @@ ${config.icp || cliente.guiaMarca.publicoAlvo || "—"}
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   try {
     const { cliente, produto, config, hooksDeReferencia, roteiroReferencia } = await request.json() as {
       cliente: Cliente;
@@ -493,6 +497,22 @@ export async function POST(request: NextRequest) {
     const jsonStr = (jsonMatch[1] ?? raw).trim();
 
     const roteiro = JSON.parse(jsonStr);
+
+    await registrar({
+      usuarioId: auth.sessao.sub,
+      usuarioEmail: auth.sessao.email,
+      acao: "roteiro.gerar",
+      recursoTipo: "cliente",
+      recursoId: cliente.id,
+      detalhes: {
+        produtoId: produto.id,
+        produtoNome: produto.nome,
+        clienteNome: cliente.nome,
+        foco: config.foco,
+        formato: config.formato,
+        modoInspirado: Boolean(roteiroReferencia),
+      },
+    });
 
     return NextResponse.json({ roteiro });
   } catch (error) {

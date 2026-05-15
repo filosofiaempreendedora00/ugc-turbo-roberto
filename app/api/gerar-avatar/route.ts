@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 const client = new Anthropic();
 
@@ -10,6 +12,8 @@ const MAX_CHIPS = 5;
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   try {
     const body = await req.json();
 
@@ -158,6 +162,13 @@ Responda APENAS com JSON válido. Sem markdown, sem texto antes ou depois.
       desejos: sanitizeChips(data.desejos),
       objecoes: sanitizeChips(data.objecoes),
     };
+
+    await registrar({
+      usuarioId: auth.sessao.sub,
+      usuarioEmail: auth.sessao.email,
+      acao: "avatar.gerar",
+      detalhes: { nomeProduto, marca: guiaMarca?.nome },
+    });
 
     return NextResponse.json(result);
   } catch (err) {

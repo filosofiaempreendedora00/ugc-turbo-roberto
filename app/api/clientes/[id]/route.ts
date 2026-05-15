@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db/client";
 import { eq } from "drizzle-orm";
 import type { Cliente } from "@/types";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const { id } = await ctx.params;
   const [row] = await db.select().from(schema.clientes).where(eq(schema.clientes.id, id));
   if (!row) return NextResponse.json({ error: "não encontrado" }, { status: 404 });
@@ -13,6 +17,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const { id } = await ctx.params;
   const body = await req.json();
   const update: Partial<typeof schema.clientes.$inferInsert> = { atualizadoEm: new Date() };
@@ -25,12 +31,35 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     .where(eq(schema.clientes.id, id))
     .returning();
   if (!row) return NextResponse.json({ error: "não encontrado" }, { status: 404 });
+  await registrar({
+    usuarioId: auth.sessao.sub,
+    usuarioEmail: auth.sessao.email,
+    acao: "cliente.atualizar",
+    recursoTipo: "cliente",
+    recursoId: row.id,
+    detalhes: { campos: Object.keys(update).filter((k) => k !== "atualizadoEm") },
+  });
   return NextResponse.json(toCliente(row));
 }
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const { id } = await ctx.params;
-  await db.delete(schema.clientes).where(eq(schema.clientes.id, id));
+  const [removido] = await db
+    .delete(schema.clientes)
+    .where(eq(schema.clientes.id, id))
+    .returning({ id: schema.clientes.id, nome: schema.clientes.nome });
+  if (removido) {
+    await registrar({
+      usuarioId: auth.sessao.sub,
+      usuarioEmail: auth.sessao.email,
+      acao: "cliente.excluir",
+      recursoTipo: "cliente",
+      recursoId: removido.id,
+      detalhes: { nome: removido.nome },
+    });
+  }
   return NextResponse.json({ ok: true });
 }
 

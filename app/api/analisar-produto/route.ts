@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { obterSessaoApi } from "@/lib/auth/api";
+import { registrar } from "@/lib/auth/audit";
 
 const client = new Anthropic();
 
@@ -53,6 +55,8 @@ function normalizeUrl(raw: string): string {
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   try {
     const body = await req.json();
     const rawUrl: string = body.url ?? "";
@@ -199,6 +203,13 @@ Responda APENAS com JSON válido. Sem markdown, sem explicações, sem texto ant
       prova:       String(data.prova       ?? "").trim(),
       uso:         String(data.uso         ?? "").trim(),
     };
+
+    await registrar({
+      usuarioId: auth.sessao.sub,
+      usuarioEmail: auth.sessao.email,
+      acao: "produto.analisar",
+      detalhes: { url },
+    });
 
     return NextResponse.json(result);
   } catch (err) {

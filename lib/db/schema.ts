@@ -1,5 +1,37 @@
-import { pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import type { GuiaMarca, GuiaProduto, AvatarICP, CenaRoteiro, FocoRoteiro, FormatoRoteiro } from "@/types";
+
+export const usuarios = pgTable("usuarios", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  nome: text("nome").notNull(),
+  picture: text("picture"),
+  role: text("role").$type<"admin" | "analista">().notNull().default("analista"),
+  googleSub: text("google_sub").unique(),
+  criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  ultimoLoginEm: timestamp("ultimo_login_em", { withTimezone: true }),
+});
+
+export const auditoriaAcoes = pgTable(
+  "auditoria_acoes",
+  {
+    id: text("id").primaryKey(),
+    usuarioId: text("usuario_id")
+      .notNull()
+      .references(() => usuarios.id, { onDelete: "restrict" }),
+    usuarioEmail: text("usuario_email").notNull(),
+    acao: text("acao").notNull(),
+    recursoTipo: text("recurso_tipo"),
+    recursoId: text("recurso_id"),
+    detalhes: jsonb("detalhes").$type<Record<string, unknown>>(),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("auditoria_acoes_usuario_idx").on(t.usuarioId),
+    index("auditoria_acoes_criado_em_idx").on(t.criadoEm),
+    index("auditoria_acoes_acao_idx").on(t.acao),
+  ],
+);
 
 export const clientes = pgTable("clientes", {
   id: text("id").primaryKey(),

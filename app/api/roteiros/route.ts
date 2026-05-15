@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db/client";
 import { asc, eq } from "drizzle-orm";
 import type { Roteiro } from "@/types";
+import { obterSessaoApi } from "@/lib/auth/api";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ function generateId(): string {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const clienteId = req.nextUrl.searchParams.get("clienteId");
   const rows = clienteId
     ? await db
@@ -22,6 +25,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await obterSessaoApi();
+  if (!auth.ok) return auth.resposta;
   const body = await req.json();
   if (!body?.clienteId || !body?.produtoId || !body?.titulo || !body?.foco || !body?.formato || !body?.icp) {
     return NextResponse.json({ error: "campos obrigatórios faltando" }, { status: 400 });
@@ -30,6 +35,7 @@ export async function POST(req: NextRequest) {
     .insert(schema.roteiros)
     .values({
       id: generateId(),
+      userId: auth.sessao.sub,
       clienteId: body.clienteId,
       produtoId: body.produtoId,
       titulo: body.titulo,
