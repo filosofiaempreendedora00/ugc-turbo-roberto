@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { urlAutorizacao } from "@/lib/auth/google";
+import { urlCallback } from "@/lib/auth/urls";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -7,15 +8,10 @@ export const dynamic = "force-dynamic";
 const COOKIE_STATE = "ugc_oauth_state";
 const COOKIE_RETORNO = "ugc_oauth_retorno";
 
-function redirectUri(req: NextRequest): string {
-  const url = new URL("/api/auth/callback", req.nextUrl.origin);
-  return url.toString();
-}
-
 export async function GET(req: NextRequest) {
   const retorno = req.nextUrl.searchParams.get("retorno") ?? "/dashboard";
   const state = randomBytes(16).toString("hex");
-  const url = urlAutorizacao(state, redirectUri(req));
+  const url = urlAutorizacao(state, urlCallback(req));
 
   const resp = NextResponse.redirect(url);
   resp.cookies.set(COOKIE_STATE, state, {

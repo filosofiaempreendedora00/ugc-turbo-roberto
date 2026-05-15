@@ -4,18 +4,15 @@ import { emailNoDominio } from "@/lib/auth/admins";
 import { upsertUsuarioPorGoogle } from "@/lib/auth/usuarios";
 import { assinarSessao, COOKIE_NOME } from "@/lib/auth/session";
 import { registrar } from "@/lib/auth/audit";
+import { urlAppPublica, urlCallback } from "@/lib/auth/urls";
 
 export const dynamic = "force-dynamic";
 
 const COOKIE_STATE = "ugc_oauth_state";
 const COOKIE_RETORNO = "ugc_oauth_retorno";
 
-function redirectUri(req: NextRequest): string {
-  return new URL("/api/auth/callback", req.nextUrl.origin).toString();
-}
-
 function urlErro(req: NextRequest, motivo: string): URL {
-  const u = new URL("/login", req.nextUrl.origin);
+  const u = new URL("/login", urlAppPublica(req));
   u.searchParams.set("erro", motivo);
   return u;
 }
@@ -35,7 +32,7 @@ export async function GET(req: NextRequest) {
 
   let info;
   try {
-    info = await trocarCodigoPorIdToken(code, redirectUri(req));
+    info = await trocarCodigoPorIdToken(code, urlCallback(req));
   } catch (err) {
     console.error("[auth/callback] troca de code falhou", err);
     return NextResponse.redirect(urlErro(req, "falha_google"));
@@ -65,7 +62,7 @@ export async function GET(req: NextRequest) {
   });
 
   const destino = retornoCookie.startsWith("/") ? retornoCookie : "/dashboard";
-  const resp = NextResponse.redirect(new URL(destino, req.nextUrl.origin));
+  const resp = NextResponse.redirect(new URL(destino, urlAppPublica(req)));
   resp.cookies.set(COOKIE_NOME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessao, COOKIE_NOME } from "@/lib/auth/session";
 import { registrar } from "@/lib/auth/audit";
+import { urlAppPublica } from "@/lib/auth/urls";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       acao: "logout",
     });
   }
-  const resp = NextResponse.redirect(new URL("/login", req.nextUrl.origin), { status: 303 });
+  const resp = NextResponse.redirect(new URL("/login", urlAppPublica(req)), { status: 303 });
   resp.cookies.delete(COOKIE_NOME);
   return resp;
 }
